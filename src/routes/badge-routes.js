@@ -8,6 +8,10 @@ import asyncHandler from '../core/error/async-handler.js';
 // &) Middleware Import
 import { requireAuth } from '../middlewares/auth.js';
 
+// &) Validator Import
+import validate from '../validators/validation.js';
+import { CreateBadge } from '../validators/badge-validator.js';
+
 // &) Controller Import
 import { badgeController } from '../controllers/badge-controller.js';
 
@@ -16,7 +20,7 @@ const router = express.Router();
 
 // ?) 배지 정의
 router.get('/', asyncHandler(badgeController.listBadges));
-router.post('/', requireAuth, asyncHandler(badgeController.createBadge));
+router.post('/', requireAuth, validate(CreateBadge), asyncHandler(badgeController.createBadge));
 
 // ?) 유저 배지
 router.get('/users/:userId', requireAuth, asyncHandler(badgeController.listUserBadges));
