@@ -3,11 +3,32 @@ import {
   ConflictError,
   NotFoundError,
   UnauthorizedError,
+  ValidationError,
 } from '../core/error/error-handler.js';
 import { recordRepo } from '../repo/record-repository.js';
 import { exerciseRepo } from '../repo/exercise-repository.js';
 import { groupRepo } from '../repo/group-repository.js';
+import { badgeService } from './badge-service.js';
+import { BADGE_KEYS } from '../constants/badge-keys.js';
 
+const validateUnits = (defaultUnit, payload) => {
+  const hasTime = payload.time !== undefined && payload.time !== null;
+  const hasDistance = payload.distance !== undefined && payload.distance !== null;
+  const hasCount = payload.count !== undefined && payload.count !== null;
+
+  // defaultUnit에 따른 필수 값 검증 (없으면 스킵)
+  if (defaultUnit === 'time' && !hasTime) {
+    throw new ValidationError('time', 'time 값이 필요합니다');
+  }
+  if (defaultUnit === 'distance' && !hasDistance) {
+    throw new ValidationError('distance', 'distance 값이 필요합니다');
+  }
+  if (defaultUnit === 'count' && !hasCount) {
+    throw new ValidationError('count', 'count 값이 필요합니다');
+  }
+
+  // 상충하는 경우는 허용(추가 입력), 최소 필수만 체크
+};
 export const recordService = {
   async createRecord(userId, groupId, payload) {
     const group = await groupRepo.findGroupById(groupId);
@@ -18,6 +39,8 @@ export const recordService = {
 
     const exercise = await exerciseRepo.findById(payload.exerciseId);
     if (!exercise) throw new NotFoundError('운동 종목을 찾을 수 없습니다');
+
+    validateUnits(exercise.defaultUnit, payload);
 
     const data = {
       description: payload.description ?? null,
@@ -30,7 +53,12 @@ export const recordService = {
       authorId: participant.id,
     };
 
-    return recordRepo.createRecord(data);
+    const record = await recordRepo.createRecord(data);
+
+    // 자동 배지 부여: 첫 기록 배지 (배지가 없으면 무시)
+    await badgeService.grantUserBadgeByKey(userId, BADGE_KEYS.FIRST_RECORD).catch(() => {});
+
+    return record;
   },
 
   async listGroupRecords(groupId) {
@@ -57,10 +85,11 @@ export const recordService = {
       throw new UnauthorizedError('작성자 또는 오너만 수정할 수 있습니다');
     }
 
-    if (payload.exerciseId) {
-      const exercise = await exerciseRepo.findById(payload.exerciseId);
-      if (!exercise) throw new NotFoundError('운동 종목을 찾을 수 없습니다');
-    }
+    const targetExerciseId = payload.exerciseId ?? record.exerciseId;
+    const exercise = await exerciseRepo.findById(targetExerciseId);
+    if (!exercise) throw new NotFoundError('운동 종목을 찾을 수 없습니다');
+
+    validateUnits(exercise.defaultUnit, payload);
 
     return recordRepo.updateRecord(id, {
       description: payload.description ?? null,
@@ -68,7 +97,7 @@ export const recordService = {
       distance: payload.distance ?? null,
       count: payload.count ?? null,
       photos: payload.photos ?? [],
-      exerciseId: payload.exerciseId ?? record.exerciseId,
+      exerciseId: targetExerciseId,
     });
   },
 

@@ -5,6 +5,7 @@ import { requireAuth } from '../middlewares/auth.js';
 import { groupController } from '../controllers/group-controller.js';
 import participantRoutes from './participant-routes.js';
 import recordRoutes from './record-routes.js';
+import { rankingController } from '../controllers/ranking-controller.js';
 import validate from '../validators/validation.js';
 import { CreateGroup, UpdateGroup, JoinGroup } from '../validators/group-validator.js';
 
@@ -25,5 +26,8 @@ router.delete('/:groupId/leave', requireAuth, asyncHandler(groupController.leave
 // 그룹 참여자 하위 라우트
 router.use('/:groupId/participants', participantRoutes);
 router.use('/:groupId/records', recordRoutes);
+
+// 그룹 랭킹
+router.get('/:groupId/rankings', asyncHandler(rankingController.groupRanking));
 
 export default router;

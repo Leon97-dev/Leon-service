@@ -24,4 +24,30 @@ export const recordRepo = {
   deleteRecord(id) {
     return prisma.record.delete({ where: { id } });
   },
+
+  aggregateByGroup(groupId, startDate, endDate) {
+    return prisma.record.groupBy({
+      by: ['authorId'],
+      where: {
+        groupId,
+        authorId: { not: null },
+        createdAt: {
+          gte: startDate,
+          lt: endDate,
+        },
+      },
+      _sum: {
+        distance: true,
+        time: true,
+        count: true,
+      },
+      _count: true,
+      orderBy: [
+        { _sum: { distance: 'desc' } },
+        { _sum: { count: 'desc' } },
+        { _sum: { time: 'desc' } },
+      ],
+      take: 10,
+    });
+  },
 };

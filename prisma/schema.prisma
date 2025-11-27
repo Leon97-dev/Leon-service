@@ -23,6 +23,7 @@ model User {
   nationality     NationalityType // 내국인 or 외국인
   phoneNumber     String          @unique @db.VarChar(32)
   refreshToken    String?         @map("refresh_token") @db.VarChar(500)
+  role            RoleType        @default(user)
 
   // 관계
   participants Participant[]
@@ -276,4 +277,9 @@ enum GenderType {
 enum NationalityType {
   domestic
   foreign
+}
+
+enum RoleType {
+  user
+  admin
 }

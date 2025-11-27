@@ -50,6 +50,7 @@ export const userService = {
       gender,
       nationality,
       phoneNumber,
+      role: 'user',
     });
   },
 

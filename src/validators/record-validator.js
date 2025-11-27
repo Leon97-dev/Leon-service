@@ -7,20 +7,14 @@ const Distance = s.optional(s.number());
 const Count = s.optional(s.number());
 const Photos = s.optional(s.array(s.string()));
 
-export const CreateRecord = s.object({
+const Base = {
   exerciseId: s.number(),
   description: Description,
   time: Time,
   distance: Distance,
   count: Count,
   photos: Photos,
-});
+};
 
-export const UpdateRecord = s.object({
-  exerciseId: s.optional(s.number()),
-  description: Description,
-  time: Time,
-  distance: Distance,
-  count: Count,
-  photos: Photos,
-});
+export const CreateRecord = s.object(Base);
+export const UpdateRecord = s.object({ ...Base, exerciseId: s.optional(s.number()) });
