@@ -43,11 +43,19 @@ export const groupRepo = {
   findParticipantByUser(groupId, userId) {
     return prisma.participant.findFirst({ where: { groupId, userId } });
   },
+  findParticipantById(id) {
+    return prisma.participant.findUnique({ where: { id } });
+  },
   listParticipants(groupId) {
     return prisma.participant.findMany({ where: { groupId } });
   },
   deleteParticipant(id, tx = null) {
     const db = clientOrDefault(tx);
     return db.participant.delete({ where: { id } });
+  },
+
+  updateParticipant(id, data, tx = null) {
+    const db = clientOrDefault(tx);
+    return db.participant.update({ where: { id }, data });
   },
 };
