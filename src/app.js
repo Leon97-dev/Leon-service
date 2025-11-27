@@ -14,6 +14,7 @@ import { errorHandler, notFoundHandler } from './core/error/error-handler.js';
 import userRoutes from './routes/user-routes.js';
 import badgeRoutes from './routes/badge-routes.js';
 import consentRoutes from './routes/consent-routes.js';
+import groupRoutes from './routes/group-routes.js';
 
 // ?) 환경 변수
 const PORT = process.env.PORT || 3000;
@@ -33,6 +34,7 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')
 app.use('/users', userRoutes); // 유저
 app.use('/badges', badgeRoutes); // 배지
 app.use('/', consentRoutes); // 정책/동의
+app.use('/groups', groupRoutes); // 그룹
 
 // ?) 404 핸들러 진입
 app.use(notFoundHandler);
