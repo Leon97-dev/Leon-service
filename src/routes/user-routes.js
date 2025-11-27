@@ -10,11 +10,7 @@ import { requireAuth } from '../middleware/auth.js';
 
 // &) Validator Import
 import validate from '../validator/validate.js';
-import {
-  RegisterUser,
-  LoginUser,
-  UpdateProfile,
-} from '../validator/user-validator.js';
+import { RegisterUser, LoginUser, UpdateProfile } from '../validator/user-validator.js';
 
 // &) Controller Import
 import { userController } from '../controllers/user-controller.js';
@@ -23,11 +19,7 @@ import { userController } from '../controllers/user-controller.js';
 const router = express.Router();
 
 // ?) 회원가입
-router.post(
-  '/register',
-  validate(RegisterUser),
-  asyncHandler(userController.register)
-);
+router.post('/register', validate(RegisterUser), asyncHandler(userController.register));
 
 // ?) 로그인
 router.post('/login', validate(LoginUser), asyncHandler(userController.login));
@@ -43,21 +35,14 @@ router.patch(
   '/name',
   requireAuth,
   validate(UpdateProfile),
-  asyncHandler(userController.updateName)
+  asyncHandler(userController.updateName),
 );
 
 // ?) 비밀번호 변경
-router.patch(
-  '/password',
-  requireAuth,
-  asyncHandler(userController.updatePassword)
-);
+router.patch('/password', requireAuth, asyncHandler(userController.updatePassword));
 
 // ?) 회원 탈퇴
 router.delete('/', requireAuth, asyncHandler(userController.removeAccount));
-
-// ?) 내가 등록한 상품 조회
-router.get('/me/products', requireAuth, asyncHandler(userController.myProducts));
 
 // ?) 토큰 재발급
 router.post('/token/refresh', asyncHandler(userController.refresh));
