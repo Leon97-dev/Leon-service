@@ -7,6 +7,8 @@ import {
 import { recordRepo } from '../repo/record-repository.js';
 import { exerciseRepo } from '../repo/exercise-repository.js';
 import { groupRepo } from '../repo/group-repository.js';
+import { badgeService } from './badge-service.js';
+import { BADGE_KEYS } from '../constants/badge-keys.js';
 
 export const recordService = {
   async createRecord(userId, groupId, payload) {
@@ -30,7 +32,12 @@ export const recordService = {
       authorId: participant.id,
     };
 
-    return recordRepo.createRecord(data);
+    const record = await recordRepo.createRecord(data);
+
+    // 자동 배지 부여: 첫 기록 배지 (배지가 없으면 무시)
+    await badgeService.grantUserBadgeByKey(userId, BADGE_KEYS.FIRST_RECORD).catch(() => {});
+
+    return record;
   },
 
   async listGroupRecords(groupId) {

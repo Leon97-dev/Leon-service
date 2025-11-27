@@ -40,12 +40,14 @@ export const authService = {
       id: user.id,
       username: user.username,
       email: user.email ?? undefined,
+      role: user.role,
     });
 
     const refreshToken = this.signRefreshToken({
       id: user.id,
       username: user.username,
       email: user.email ?? undefined,
+      role: user.role,
     });
 
     await userRepo.setUserRefreshToken(user.id, refreshToken);
@@ -60,6 +62,7 @@ export const authService = {
       id: decoded.id,
       username: decoded.username,
       email: decoded.email ?? undefined,
+      role: decoded.role,
     });
   },
 

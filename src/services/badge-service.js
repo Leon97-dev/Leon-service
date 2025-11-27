@@ -19,6 +19,19 @@ export const badgeService = {
     return badgeRepo.listBadges();
   },
 
+  async grantUserBadgeByKey(userId, key, payload = {}) {
+    const badge = await badgeRepo.findBadgeByKey(key);
+    if (!badge) return null;
+    return badgeRepo.upsertUserBadge({
+      userId,
+      badgeId: badge.id,
+      grantedAt: payload.grantedAt,
+      expiresAt: payload.expiresAt,
+      grantedBy: payload.grantedBy,
+      metadata: payload.metadata,
+    });
+  },
+
   // 유저 배지
   async grantUserBadge(payload) {
     const badge = await badgeRepo.findBadgeById(payload.badgeId);
