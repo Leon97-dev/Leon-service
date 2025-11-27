@@ -4,6 +4,7 @@ import asyncHandler from '../core/error/async-handler.js';
 import { requireAuth } from '../middlewares/auth.js';
 import { groupController } from '../controllers/group-controller.js';
 import participantRoutes from './participant-routes.js';
+import recordRoutes from './record-routes.js';
 
 const router = express.Router();
 
@@ -21,5 +22,6 @@ router.delete('/:groupId/leave', requireAuth, asyncHandler(groupController.leave
 
 // 그룹 참여자 하위 라우트
 router.use('/:groupId/participants', participantRoutes);
+router.use('/:groupId/records', recordRoutes);
 
 export default router;
