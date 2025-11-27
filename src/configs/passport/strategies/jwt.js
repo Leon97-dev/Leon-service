@@ -3,7 +3,7 @@
 import passport from 'passport';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import { env } from '../../env.js';
-import { findUserById } from '../../../repositories/user-repository.js';
+import { userRepo } from '../../../repo/user-repository.js';
 
 // ?) JWT 전략 등록 함수
 // *) setupPassport()에서 호출됨
@@ -28,7 +28,7 @@ export function setupJwtStrategy() {
       async (payload, done) => {
         try {
           // ?) payload.id 기준으로 유저 조회
-          const user = await findUserById(payload.id);
+          const user = await userRepo.findUserById(payload.id);
 
           // ?) 유저 없음 → 인증 실패
           if (!user) return done(null, false);
@@ -36,6 +36,7 @@ export function setupJwtStrategy() {
           // ?) 인증 성공 → req.user = user 저장
           return done(null, {
             id: user.id,
+            username: user.username,
             email: user.email,
             role: user.role,
           });
