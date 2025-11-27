@@ -8,9 +8,24 @@ export const userRepo = {
     return prisma.user.create({ data });
   },
 
+  // ?) username으로 조회
+  findUserByUsername(username) {
+    return prisma.user.findUnique({ where: { username } });
+  },
+
   // ?) 이메일로 조회
   findUserByEmail(email) {
     return prisma.user.findUnique({ where: { email } });
+  },
+
+  // ?) 휴대전화로 조회
+  findUserByPhone(phoneNumber) {
+    return prisma.user.findUnique({ where: { phoneNumber } });
+  },
+
+  // ?) 닉네임으로 조회
+  findUserByNickName(nickName) {
+    return prisma.user.findUnique({ where: { nickName } });
   },
 
   // ?) 아이디로 조회
