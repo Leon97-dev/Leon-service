@@ -4,6 +4,8 @@ import jwt from 'jsonwebtoken';
 
 // &) Repo Import
 import { userRepo } from '../repo/user-repository.js';
+import { hashToken, verifyToken } from '../utils/to-hash.js';
+import { UnauthorizedError } from '../core/error/error-handler.js';
 
 // ?) 환경 변수
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
@@ -19,9 +21,7 @@ export const authService = {
 
   // ?) 리프레시 토큰 발급
   signRefreshToken(payload) {
-    return jwt.sign(payload, REFRESH_SECRET, {
-      expiresIn: REFRESH_EXPIRES_IN,
-    });
+    return jwt.sign(payload, REFRESH_SECRET, { expiresIn: REFRESH_EXPIRES_IN });
   },
 
   // ?) 액세스 토큰 검증
@@ -50,20 +50,51 @@ export const authService = {
       role: user.role,
     });
 
-    await userRepo.setUserRefreshToken(user.id, refreshToken);
+    const hashed = await hashToken(refreshToken);
+    await userRepo.setUserRefreshToken(user.id, hashed);
     return { accessToken, refreshToken };
   },
 
   // ?) 액세스 토큰 재발급
-  rotateAccessToken(refreshToken) {
-    const decoded = this.verifyRefreshToken(refreshToken);
+  async rotateAccessToken(refreshToken) {
+    let decoded;
+    try {
+      decoded = this.verifyRefreshToken(refreshToken);
+    } catch (e) {
+      throw new UnauthorizedError('refresh 토큰이 유효하지 않습니다');
+    }
 
-    return this.signAccessToken({
+    const user = await userRepo.findUserById(decoded.id);
+    if (!user?.refreshToken) {
+      throw new UnauthorizedError('refresh 토큰이 존재하지 않습니다');
+    }
+
+    const matches = await verifyToken(refreshToken, user.refreshToken);
+    if (!matches) {
+      // 재사용 공격 의심 → 보유 토큰 제거
+      await userRepo.clearUserRefreshToken(decoded.id);
+      throw new UnauthorizedError('refresh 토큰이 무효화되었습니다');
+    }
+
+    // 새 토큰 세트 발급(로테이션)
+    const accessToken = this.signAccessToken({
       id: decoded.id,
       username: decoded.username,
       email: decoded.email ?? undefined,
       role: decoded.role,
     });
+
+    const newRefreshToken = this.signRefreshToken({
+      id: decoded.id,
+      username: decoded.username,
+      email: decoded.email ?? undefined,
+      role: decoded.role,
+    });
+
+    const hashed = await hashToken(newRefreshToken);
+    await userRepo.setUserRefreshToken(decoded.id, hashed);
+
+    return { accessToken, refreshToken: newRefreshToken };
   },
 
   // ?) 리프레시 토큰 제거

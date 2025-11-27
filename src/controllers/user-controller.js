@@ -123,12 +123,20 @@ export const userController = {
     if (!refreshToken) {
       return res.status(401).json({ success: false, message: 'refreshToken이 없습니다' });
     }
-    const accessToken = await authService.rotateAccessToken(refreshToken);
+    const tokens = await authService.rotateAccessToken(refreshToken);
+
+    if (tokens.refreshToken) {
+      res.cookie('refreshToken', tokens.refreshToken, {
+        httpOnly: true,
+        sameSite: isProd ? 'none' : 'lax',
+        secure: isProd,
+      });
+    }
 
     res.status(200).json({
       success: true,
       message: '토큰 재발급 성공',
-      accessToken,
+      accessToken: tokens.accessToken,
     });
   },
 
