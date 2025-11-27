@@ -1,6 +1,6 @@
 // TODO) App: 서버 진입점
 // &) Config Import
-import './config/env.js'; // 맨 위 필수!
+import './configs/env.js'; // 맨 위 필수!
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -12,6 +12,7 @@ import { errorHandler, notFoundHandler } from './core/error/error-handler.js';
 
 // &) Route Import
 import userRoutes from './routes/user-routes.js';
+import badgeRoutes from './routes/badge-routes.js';
 
 // ?) 환경 변수
 const PORT = process.env.PORT || 3000;
@@ -29,6 +30,7 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')
 
 // ?) 라우터 진입 (핵심)
 app.use('/users', userRoutes); // 유저
+app.use('/badges', badgeRoutes); // 배지
 
 // ?) 404 핸들러 진입
 app.use(notFoundHandler);

@@ -6,11 +6,11 @@ import express from 'express';
 import asyncHandler from '../core/error/async-handler.js';
 
 // &) Middleware Import
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth } from '../middlewares/auth.js';
 
 // &) Validator Import
-import validate from '../validator/validate.js';
-import { RegisterUser, LoginUser, UpdateProfile } from '../validator/user-validator.js';
+import validate from '../validators/validation.js';
+import { RegisterUser, LoginUser, UpdateProfile } from '../validators/user-validator.js';
 
 // &) Controller Import
 import { userController } from '../controllers/user-controller.js';

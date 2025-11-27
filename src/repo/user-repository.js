@@ -1,6 +1,6 @@
 // TODO) User-Repository: DB 저장소
 // &) Config Import
-import prisma from '../config/prisma.js';
+import prisma from '../configs/prisma.js';
 
 export const userRepo = {
   // ?) 유저 생성
