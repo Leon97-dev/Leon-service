@@ -3,6 +3,8 @@ import express from 'express';
 import asyncHandler from '../core/error/async-handler.js';
 import { requireAuth } from '../middlewares/auth.js';
 import { participantController } from '../controllers/participant-controller.js';
+import validate from '../validators/validation.js';
+import { UpdateParticipant } from '../validators/participant-validator.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -10,7 +12,12 @@ const router = express.Router({ mergeParams: true });
 router.get('/', requireAuth, asyncHandler(participantController.list));
 
 // 닉네임 변경
-router.patch('/:participantId', requireAuth, asyncHandler(participantController.updateNickname));
+router.patch(
+  '/:participantId',
+  requireAuth,
+  validate(UpdateParticipant),
+  asyncHandler(participantController.updateNickname),
+);
 
 // 참여자 제거
 router.delete('/:participantId', requireAuth, asyncHandler(participantController.remove));
