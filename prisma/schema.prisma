@@ -12,16 +12,16 @@ datasource db {
 // ============================================
 model User {
   id              Int             @id @default(autoincrement())
-  username        String          @unique // 로그인 아이디
-  password        String
-  email           String?         @unique // 비밀번호 찾기용 (선택)
-  nickName        String?         @unique // 프로필 별명
-  profileImageUrl String?         @map("profile_image_url") // 프로필 이미지
+  username        String          @unique @db.VarChar(64) // 로그인 아이디
+  password        String          @db.VarChar(255)
+  email           String?         @unique @db.VarChar(254) // 비밀번호 찾기용 (선택)
+  nickName        String?         @unique @db.VarChar(64) // 프로필 별명
+  profileImageUrl String?         @map("profile_image_url") @db.VarChar(2048) // 프로필 이미지
   birthDate       String          @db.VarChar(8) // YYYYMMDD
   carrier         CarrierType // 통신사
   gender          GenderType
   nationality     NationalityType // 내국인 or 외국인
-  phoneNumber     String          @unique
+  phoneNumber     String          @unique @db.VarChar(32)
 
   // 관계
   participants Participant[]
@@ -43,11 +43,11 @@ model User {
 // ============================================
 model Badge {
   id          Int     @id @default(autoincrement())
-  key         String  @unique // 프로그램 식별용
-  name        String
+  key         String  @unique @db.VarChar(64) // 프로그램 식별용
+  name        String  @db.VarChar(128)
   description String?
-  iconUrl     String? @map("icon_url")
-  category    String?
+  iconUrl     String? @map("icon_url") @db.VarChar(2048)
+  category    String? @db.VarChar(64)
   isSecret    Boolean @default(false)
 
   // 관계
@@ -78,6 +78,8 @@ model UserBadge {
   badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
   @@map("user_badges")
 }
 
@@ -98,6 +100,8 @@ model GroupBadge {
   badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, badgeId])
+  @@index([groupId])
+  @@index([badgeId])
   @@map("group_badges")
 }
 
@@ -106,9 +110,9 @@ model GroupBadge {
 // ============================================
 model Policy {
   id          Int     @id @default(autoincrement())
-  key         String // "terms", "privacy", "location", "marketing" 등
-  version     String
-  title       String
+  key         String  @db.VarChar(64) // "terms", "privacy", "location", "marketing" 등
+  version     String  @db.VarChar(32)
+  title       String  @db.VarChar(128)
   description String?
   required    Boolean @default(true)
 
@@ -143,6 +147,8 @@ model UserConsent {
   effectiveFrom DateTime  @default(now()) @map("effective_from") // 효력 시작 시점
   effectiveTo   DateTime? @map("effective_to") // 효력 종료 시점(현재 효력 중이면 null)
 
+  @@index([userId])
+  @@index([policyId])
   @@map("user_consents")
 }
 
@@ -151,7 +157,7 @@ model UserConsent {
 // ============================================
 model Group {
   id                Int      @id @default(autoincrement())
-  name              String
+  name              String   @db.VarChar(100)
   description       String?
   photoUrl          String?  @map("photo_url")
   goalRep           Int      @default(100) @map("goal_rep") // 기본값 설정
@@ -171,6 +177,7 @@ model Group {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([ownerId])
   @@map("groups")
 }
 
@@ -179,7 +186,7 @@ model Group {
 // ============================================
 model Participant {
   id       Int    @id @default(autoincrement())
-  nickname String
+  nickname String @db.VarChar(64)
   groupId  Int    @map("group_id")
   userId   Int?   @map("user_id")
 
@@ -196,6 +203,8 @@ model Participant {
   // 제약 완화: unique 제거 (같은 그룹 내 닉네임 중복 허용)
   // @@unique([groupId, nickname], name: "unique_nickname_per_group")
 
+  @@index([groupId])
+  @@index([userId])
   @@map("participants")
 }
 
@@ -222,6 +231,9 @@ model Record {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([exerciseId])
+  @@index([groupId])
+  @@index([authorId])
   @@map("records")
 }
 
@@ -231,9 +243,9 @@ model Record {
 model Exercise {
   id          Int     @id @default(autoincrement())
   key         String  @unique @db.VarChar(64) // slug/프로그램 식별자 (앱 레벨에서 슬러그 검증)
-  name        String
-  category    String?
-  defaultUnit String? // 시간/거리/횟수 등 표시용
+  name        String  @db.VarChar(128)
+  category    String? @db.VarChar(64)
+  defaultUnit String? @db.VarChar(16) // 시간/거리/횟수 등 표시용
 
   // 관계
   records Record[]
