@@ -6,3 +6,237 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ============================================
+// User (유저)
+// ============================================
+model User {
+  id              Int             @id @default(autoincrement())
+  username        String          @unique // 로그인 아이디
+  password        String
+  email           String?         @unique // 비밀번호 찾기용 (선택)
+  nickName        String?         @unique // 프로필 별명
+  profileImageUrl String?         @map("profile_image_url") // 프로필 이미지
+  birthDate       String          @db.VarChar(8) // YYYYMMDD
+  carrier         CarrierType // 통신사
+  gender          GenderType
+  nationality     NationalityType // 내국인 or 외국인
+  phoneNumber     String          @unique
+
+  // 관계
+  participants Participant[]
+  consents     UserConsent[]
+  userBadges   UserBadge[]
+
+  // 타임스탬프
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  phoneVerifiedAt DateTime?
+
+  @@map("users")
+}
+
+// ============================================
+// Badge (배지 정의)
+// ============================================
+model Badge {
+  id          Int     @id @default(autoincrement())
+  key         String  @unique // 프로그램 식별용
+  name        String
+  description String?
+  iconUrl     String? @map("icon_url")
+  category    String?
+  isSecret    Boolean @default(false)
+
+  // 관계
+  userBadges UserBadge[]
+
+  // 타임스탬프
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("badges")
+}
+
+// ============================================
+// UserBadge (유저 배지 소유)
+// ============================================
+model UserBadge {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  badgeId   Int       @map("badge_id")
+  grantedAt DateTime  @default(now()) @map("granted_at")
+  expiresAt DateTime? @map("expires_at")
+  grantedBy String? // 부여 주체(관리자, 시스템 등)
+  metadata  Json? // 획득 조건 등 추가 정보
+
+  // 관계
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
+
+// ============================================
+// Policy (동의 항목 정의)
+// ============================================
+model Policy {
+  id          Int     @id @default(autoincrement())
+  key         String // "terms", "privacy", "location", "marketing" 등
+  version     String
+  title       String
+  description String?
+  required    Boolean @default(true)
+
+  // 관계
+  consents UserConsent[]
+
+  // 타임스탬프
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([key, version])
+  @@map("policies")
+}
+
+// ============================================
+// UserConsent (유저 동의 기록)
+// ============================================
+model UserConsent {
+  id              Int     @id @default(autoincrement())
+  userId          Int     @map("user_id")
+  policyId        Int     @map("policy_id")
+  accepted        Boolean @default(true) // true: 동의, false: 거부/철회 상태
+  versionSnapshot String  @map("version_snapshot")
+
+  // 관계
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  policy Policy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  // 타임스탬프
+  acceptedAt  DateTime  @default(now()) @map("accepted_at")
+  withdrawnAt DateTime? @map("withdrawn_at")
+
+  @@unique([userId, policyId])
+  @@map("user_consents")
+}
+
+// ============================================
+// Group (그룹)
+// ============================================
+model Group {
+  id                Int      @id @default(autoincrement())
+  name              String
+  description       String?
+  photoUrl          String?  @map("photo_url")
+  goalRep           Int      @default(100) @map("goal_rep") // 기본값 설정
+  tags              String[] @default([]) // 기본값 설정
+  discordWebhookUrl String?  @map("discord_webhook_url")
+  discordInviteUrl  String?  @map("discord_invite_url")
+  likeCount         Int      @default(0) @map("like_count")
+  badges            String[] @default([])
+
+  // 관계
+  ownerId      Int?          @map("owner_id") // nullable 유지
+  owner        Participant?  @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  participants Participant[] @relation("GroupParticipants")
+  records      Record[]
+
+  // 타임스탬프
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("groups")
+}
+
+// ============================================
+// Participant (참여자)
+// ============================================
+model Participant {
+  id       Int    @id @default(autoincrement())
+  nickname String
+  groupId  Int    @map("group_id")
+  userId   Int?   @map("user_id")
+
+  // 관계
+  group       Group    @relation("GroupParticipants", fields: [groupId], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  ownedGroups Group[]  @relation("GroupOwner")
+  records     Record[]
+
+  // 타임스탬프
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 제약 완화: unique 제거 (같은 그룹 내 닉네임 중복 허용)
+  // @@unique([groupId, nickname], name: "unique_nickname_per_group")
+
+  @@map("participants")
+}
+
+// ============================================
+// Record (운동 기록)
+// ============================================
+model Record {
+  id                  Int          @id @default(autoincrement())
+  description         String?
+  time                Int
+  distance            Float
+  photos              String[]     @default([])
+  customExerciseName  String?      @map("custom_exercise_name") // 사전에 없는 종목명 자유 입력
+
+  // 관계
+  exerciseId Int?         @map("exercise_id")
+  exercise   Exercise?    @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
+  groupId    Int          @map("group_id")
+  group      Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  authorId   Int?         @map("author_id") // nullable로 변경
+  author     Participant? @relation(fields: [authorId], references: [id], onDelete: SetNull) // Cascade → SetNull
+
+  // 타임스탬프
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("records")
+}
+
+// ============================================
+// Exercise (운동 종목 사전)
+// ============================================
+model Exercise {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique // slug/프로그램 식별자
+  name        String
+  category    String?
+  defaultUnit String?  // 시간/거리/횟수 등 표시용
+
+  // 관계
+  records Record[]
+
+  // 타임스탬프
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("exercises")
+}
+
+// ============================================
+// Enum
+// ============================================
+enum CarrierType {
+  SKT
+  KT
+  LGU
+  MVNO
+}
+
+enum GenderType {
+  male
+  female
+}
+
+enum NationalityType {
+  domestic
+  foreign
+}
