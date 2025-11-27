@@ -3,7 +3,7 @@
 import jwt from 'jsonwebtoken';
 
 // &) Repo Import
-import { userRepo } from '../repositories/user-repository.js';
+import { userRepo } from '../repo/user-repository.js';
 
 // ?) 환경 변수
 const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
@@ -38,12 +38,14 @@ export const authService = {
   async generateTokens(user) {
     const accessToken = this.signAccessToken({
       id: user.id,
-      email: user.email,
+      username: user.username,
+      email: user.email ?? undefined,
     });
 
     const refreshToken = this.signRefreshToken({
       id: user.id,
-      email: user.email,
+      username: user.username,
+      email: user.email ?? undefined,
     });
 
     await userRepo.setUserRefreshToken(user.id, refreshToken);
@@ -56,7 +58,8 @@ export const authService = {
 
     return this.signAccessToken({
       id: decoded.id,
-      email: decoded.email,
+      username: decoded.username,
+      email: decoded.email ?? undefined,
     });
   },
 
