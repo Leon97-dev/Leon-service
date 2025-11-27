@@ -11,3 +11,7 @@ export async function hashPassword(password) {
 export async function verifyPassword(plain, hashed) {
   return bcrypt.compare(plain, hashed);
 }
+
+// refresh 토큰 등 일반 문자열 해시에 재사용
+export const hashToken = hashPassword;
+export const verifyToken = verifyPassword;
