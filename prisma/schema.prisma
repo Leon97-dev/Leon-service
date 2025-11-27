@@ -22,6 +22,7 @@ model User {
   gender          GenderType
   nationality     NationalityType // 내국인 or 외국인
   phoneNumber     String          @unique @db.VarChar(32)
+  refreshToken    String?         @map("refresh_token") @db.VarChar(500)
 
   // 관계
   participants Participant[]
