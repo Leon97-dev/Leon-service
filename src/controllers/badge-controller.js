@@ -1,8 +1,6 @@
 // TODO) Badge-Controller: 배지 관련 요청 처리
 import { badgeService } from '../services/badge-service.js';
 
-const isProd = process.env.NODE_ENV === 'production';
-
 export const badgeController = {
   // 배지 정의 생성
   async createBadge(req, res) {
