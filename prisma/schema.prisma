@@ -6,3 +6,273 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ============================================
+// User (유저)
+// ============================================
+model User {
+  id              Int             @id @default(autoincrement())
+  username        String          @unique @db.VarChar(64) // 로그인 아이디
+  password        String          @db.VarChar(255)
+  email           String?         @unique @db.VarChar(254) // 비밀번호 찾기용 (선택)
+  nickName        String?         @unique @db.VarChar(64) // 프로필 별명
+  profileImageUrl String?         @map("profile_image_url") @db.VarChar(2048) // 프로필 이미지
+  birthDate       String          @db.VarChar(8) // YYYYMMDD
+  carrier         CarrierType // 통신사
+  gender          GenderType
+  nationality     NationalityType // 내국인 or 외국인
+  phoneNumber     String          @unique @db.VarChar(32)
+
+  // 관계
+  participants Participant[]
+  consents     UserConsent[]
+  userBadges   UserBadge[]
+
+  // 타임스탬프
+  createdAt                    DateTime  @default(now()) @map("created_at")
+  updatedAt                    DateTime  @updatedAt @map("updated_at")
+  phoneVerified                Boolean   @default(false)
+  phoneVerifiedAt              DateTime?
+  phoneVerificationRequestedAt DateTime?
+
+  @@map("users")
+}
+
+// ============================================
+// Badge (배지 정의)
+// ============================================
+model Badge {
+  id          Int     @id @default(autoincrement())
+  key         String  @unique @db.VarChar(64) // 프로그램 식별용
+  name        String  @db.VarChar(128)
+  description String?
+  iconUrl     String? @map("icon_url") @db.VarChar(2048)
+  category    String? @db.VarChar(64)
+  isSecret    Boolean @default(false)
+
+  // 관계
+  userBadges UserBadge[]
+
+  // 타임스탬프
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  groupBadges GroupBadge[]
+
+  @@map("badges")
+}
+
+// ============================================
+// UserBadge (유저 배지 소유)
+// ============================================
+model UserBadge {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  badgeId   Int       @map("badge_id")
+  grantedAt DateTime  @default(now()) @map("granted_at")
+  expiresAt DateTime? @map("expires_at")
+  grantedBy String? // 부여 주체(관리자, 시스템 등)
+  metadata  Json? // 획득 조건 등 추가 정보
+
+  // 관계
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
+  @@map("user_badges")
+}
+
+// ============================================
+// GroupBadge (그룹 배지 소유)
+// ============================================
+model GroupBadge {
+  id        Int       @id @default(autoincrement())
+  groupId   Int       @map("group_id")
+  badgeId   Int       @map("badge_id")
+  grantedAt DateTime  @default(now()) @map("granted_at")
+  expiresAt DateTime? @map("expires_at")
+  grantedBy String? // 부여 주체(관리자, 시스템 등)
+  metadata  Json? // 추가 정보
+
+  // 관계
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, badgeId])
+  @@index([groupId])
+  @@index([badgeId])
+  @@map("group_badges")
+}
+
+// ============================================
+// Policy (동의 항목 정의)
+// ============================================
+model Policy {
+  id          Int     @id @default(autoincrement())
+  key         String  @db.VarChar(64) // "terms", "privacy", "location", "marketing" 등
+  version     String  @db.VarChar(32)
+  title       String  @db.VarChar(128)
+  description String?
+  required    Boolean @default(true)
+
+  // 관계
+  consents UserConsent[]
+
+  // 타임스탬프
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([key, version])
+  @@map("policies")
+}
+
+// ============================================
+// UserConsent (유저 동의 기록)
+// ============================================
+model UserConsent {
+  id              Int     @id @default(autoincrement())
+  userId          Int     @map("user_id")
+  policyId        Int     @map("policy_id")
+  accepted        Boolean @default(true) // true: 동의, false: 거부/철회 상태
+  versionSnapshot String  @map("version_snapshot")
+
+  // 관계
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  policy Policy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  // 타임스탬프
+  acceptedAt    DateTime  @default(now()) @map("accepted_at")
+  withdrawnAt   DateTime? @map("withdrawn_at")
+  effectiveFrom DateTime  @default(now()) @map("effective_from") // 효력 시작 시점
+  effectiveTo   DateTime? @map("effective_to") // 효력 종료 시점(현재 효력 중이면 null)
+
+  @@index([userId])
+  @@index([policyId])
+  @@map("user_consents")
+}
+
+// ============================================
+// Group (그룹)
+// ============================================
+model Group {
+  id                Int      @id @default(autoincrement())
+  name              String   @db.VarChar(100)
+  description       String?
+  photoUrl          String?  @map("photo_url")
+  goalRep           Int      @default(100) @map("goal_rep") // 기본값 설정
+  tags              String[] @default([]) // 기본값 설정
+  discordWebhookUrl String?  @map("discord_webhook_url")
+  discordInviteUrl  String?  @map("discord_invite_url")
+  likeCount         Int      @default(0) @map("like_count")
+
+  // 관계
+  ownerId      Int?          @map("owner_id") // nullable 유지
+  owner        Participant?  @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  participants Participant[] @relation("GroupParticipants")
+  records      Record[]
+  groupBadges  GroupBadge[]
+
+  // 타임스탬프
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([ownerId])
+  @@map("groups")
+}
+
+// ============================================
+// Participant (참여자)
+// ============================================
+model Participant {
+  id       Int    @id @default(autoincrement())
+  nickname String @db.VarChar(64)
+  groupId  Int    @map("group_id")
+  userId   Int?   @map("user_id")
+
+  // 관계
+  group       Group    @relation("GroupParticipants", fields: [groupId], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  ownedGroups Group[]  @relation("GroupOwner")
+  records     Record[]
+
+  // 타임스탬프
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 제약 완화: unique 제거 (같은 그룹 내 닉네임 중복 허용)
+  // @@unique([groupId, nickname], name: "unique_nickname_per_group")
+
+  @@index([groupId])
+  @@index([userId])
+  @@map("participants")
+}
+
+// ============================================
+// Record (운동 기록)
+// ============================================
+model Record {
+  id          Int      @id @default(autoincrement())
+  description String?
+  time        Int?
+  distance    Float?
+  count       Int? // 횟수 기반 종목용
+  photos      String[] @default([])
+
+  // 관계
+  exerciseId Int          @map("exercise_id")
+  exercise   Exercise     @relation(fields: [exerciseId], references: [id])
+  groupId    Int          @map("group_id")
+  group      Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  authorId   Int?         @map("author_id") // nullable로 변경
+  author     Participant? @relation(fields: [authorId], references: [id], onDelete: SetNull) // Cascade → SetNull
+
+  // 타임스탬프
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([exerciseId])
+  @@index([groupId])
+  @@index([authorId])
+  @@map("records")
+}
+
+// ============================================
+// Exercise (운동 종목 사전)
+// ============================================
+model Exercise {
+  id          Int     @id @default(autoincrement())
+  key         String  @unique @db.VarChar(64) // slug/프로그램 식별자 (앱 레벨에서 슬러그 검증)
+  name        String  @db.VarChar(128)
+  category    String? @db.VarChar(64)
+  defaultUnit String? @db.VarChar(16) // 시간/거리/횟수 등 표시용
+
+  // 관계
+  records Record[]
+
+  // 타임스탬프
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("exercises")
+}
+
+// ============================================
+// Enum
+// ============================================
+enum CarrierType {
+  SKT
+  KT
+  LGU
+  MVNO
+}
+
+enum GenderType {
+  male
+  female
+}
+
+enum NationalityType {
+  domestic
+  foreign
+}
