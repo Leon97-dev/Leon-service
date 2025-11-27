@@ -29,9 +29,11 @@ model User {
   userBadges   UserBadge[]
 
   // 타임스탬프
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  phoneVerifiedAt DateTime?
+  createdAt                    DateTime  @default(now()) @map("created_at")
+  updatedAt                    DateTime  @updatedAt @map("updated_at")
+  phoneVerified                Boolean   @default(false)
+  phoneVerifiedAt              DateTime?
+  phoneVerificationRequestedAt DateTime?
 
   @@map("users")
 }
@@ -52,8 +54,9 @@ model Badge {
   userBadges UserBadge[]
 
   // 타임스탬프
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  groupBadges GroupBadge[]
 
   @@map("badges")
 }
@@ -76,6 +79,26 @@ model UserBadge {
 
   @@unique([userId, badgeId])
   @@map("user_badges")
+}
+
+// ============================================
+// GroupBadge (그룹 배지 소유)
+// ============================================
+model GroupBadge {
+  id        Int       @id @default(autoincrement())
+  groupId   Int       @map("group_id")
+  badgeId   Int       @map("badge_id")
+  grantedAt DateTime  @default(now()) @map("granted_at")
+  expiresAt DateTime? @map("expires_at")
+  grantedBy String? // 부여 주체(관리자, 시스템 등)
+  metadata  Json? // 추가 정보
+
+  // 관계
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, badgeId])
+  @@map("group_badges")
 }
 
 // ============================================
@@ -115,10 +138,11 @@ model UserConsent {
   policy Policy @relation(fields: [policyId], references: [id], onDelete: Cascade)
 
   // 타임스탬프
-  acceptedAt  DateTime  @default(now()) @map("accepted_at")
-  withdrawnAt DateTime? @map("withdrawn_at")
+  acceptedAt    DateTime  @default(now()) @map("accepted_at")
+  withdrawnAt   DateTime? @map("withdrawn_at")
+  effectiveFrom DateTime  @default(now()) @map("effective_from") // 효력 시작 시점
+  effectiveTo   DateTime? @map("effective_to") // 효력 종료 시점(현재 효력 중이면 null)
 
-  @@unique([userId, policyId])
   @@map("user_consents")
 }
 
@@ -135,13 +159,13 @@ model Group {
   discordWebhookUrl String?  @map("discord_webhook_url")
   discordInviteUrl  String?  @map("discord_invite_url")
   likeCount         Int      @default(0) @map("like_count")
-  badges            String[] @default([])
 
   // 관계
   ownerId      Int?          @map("owner_id") // nullable 유지
   owner        Participant?  @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   participants Participant[] @relation("GroupParticipants")
   records      Record[]
+  groupBadges  GroupBadge[]
 
   // 타임스탬프
   createdAt DateTime @default(now()) @map("created_at")
@@ -179,16 +203,16 @@ model Participant {
 // Record (운동 기록)
 // ============================================
 model Record {
-  id                  Int          @id @default(autoincrement())
-  description         String?
-  time                Int
-  distance            Float
-  photos              String[]     @default([])
-  customExerciseName  String?      @map("custom_exercise_name") // 사전에 없는 종목명 자유 입력
+  id          Int      @id @default(autoincrement())
+  description String?
+  time        Int?
+  distance    Float?
+  count       Int? // 횟수 기반 종목용
+  photos      String[] @default([])
 
   // 관계
-  exerciseId Int?         @map("exercise_id")
-  exercise   Exercise?    @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
+  exerciseId Int          @map("exercise_id")
+  exercise   Exercise     @relation(fields: [exerciseId], references: [id])
   groupId    Int          @map("group_id")
   group      Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
   authorId   Int?         @map("author_id") // nullable로 변경
@@ -205,11 +229,11 @@ model Record {
 // Exercise (운동 종목 사전)
 // ============================================
 model Exercise {
-  id          Int      @id @default(autoincrement())
-  key         String   @unique // slug/프로그램 식별자
+  id          Int     @id @default(autoincrement())
+  key         String  @unique @db.VarChar(64) // slug/프로그램 식별자 (앱 레벨에서 슬러그 검증)
   name        String
   category    String?
-  defaultUnit String?  // 시간/거리/횟수 등 표시용
+  defaultUnit String? // 시간/거리/횟수 등 표시용
 
   // 관계
   records Record[]
