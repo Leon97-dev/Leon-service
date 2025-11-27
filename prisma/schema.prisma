@@ -12,16 +12,16 @@ datasource db {
 // ============================================
 model User {
   id              Int             @id @default(autoincrement())
-  username        String          @unique // 로그인 아이디
-  password        String
-  email           String?         @unique // 비밀번호 찾기용 (선택)
-  nickName        String?         @unique // 프로필 별명
-  profileImageUrl String?         @map("profile_image_url") // 프로필 이미지
+  username        String          @unique @db.VarChar(64) // 로그인 아이디
+  password        String          @db.VarChar(255)
+  email           String?         @unique @db.VarChar(254) // 비밀번호 찾기용 (선택)
+  nickName        String?         @unique @db.VarChar(64) // 프로필 별명
+  profileImageUrl String?         @map("profile_image_url") @db.VarChar(2048) // 프로필 이미지
   birthDate       String          @db.VarChar(8) // YYYYMMDD
   carrier         CarrierType // 통신사
   gender          GenderType
   nationality     NationalityType // 내국인 or 외국인
-  phoneNumber     String          @unique
+  phoneNumber     String          @unique @db.VarChar(32)
 
   // 관계
   participants Participant[]
@@ -29,9 +29,11 @@ model User {
   userBadges   UserBadge[]
 
   // 타임스탬프
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  phoneVerifiedAt DateTime?
+  createdAt                    DateTime  @default(now()) @map("created_at")
+  updatedAt                    DateTime  @updatedAt @map("updated_at")
+  phoneVerified                Boolean   @default(false)
+  phoneVerifiedAt              DateTime?
+  phoneVerificationRequestedAt DateTime?
 
   @@map("users")
 }
@@ -41,19 +43,20 @@ model User {
 // ============================================
 model Badge {
   id          Int     @id @default(autoincrement())
-  key         String  @unique // 프로그램 식별용
-  name        String
+  key         String  @unique @db.VarChar(64) // 프로그램 식별용
+  name        String  @db.VarChar(128)
   description String?
-  iconUrl     String? @map("icon_url")
-  category    String?
+  iconUrl     String? @map("icon_url") @db.VarChar(2048)
+  category    String? @db.VarChar(64)
   isSecret    Boolean @default(false)
 
   // 관계
   userBadges UserBadge[]
 
   // 타임스탬프
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  groupBadges GroupBadge[]
 
   @@map("badges")
 }
@@ -75,7 +78,31 @@ model UserBadge {
   badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
   @@map("user_badges")
+}
+
+// ============================================
+// GroupBadge (그룹 배지 소유)
+// ============================================
+model GroupBadge {
+  id        Int       @id @default(autoincrement())
+  groupId   Int       @map("group_id")
+  badgeId   Int       @map("badge_id")
+  grantedAt DateTime  @default(now()) @map("granted_at")
+  expiresAt DateTime? @map("expires_at")
+  grantedBy String? // 부여 주체(관리자, 시스템 등)
+  metadata  Json? // 추가 정보
+
+  // 관계
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, badgeId])
+  @@index([groupId])
+  @@index([badgeId])
+  @@map("group_badges")
 }
 
 // ============================================
@@ -83,9 +110,9 @@ model UserBadge {
 // ============================================
 model Policy {
   id          Int     @id @default(autoincrement())
-  key         String // "terms", "privacy", "location", "marketing" 등
-  version     String
-  title       String
+  key         String  @db.VarChar(64) // "terms", "privacy", "location", "marketing" 등
+  version     String  @db.VarChar(32)
+  title       String  @db.VarChar(128)
   description String?
   required    Boolean @default(true)
 
@@ -115,10 +142,13 @@ model UserConsent {
   policy Policy @relation(fields: [policyId], references: [id], onDelete: Cascade)
 
   // 타임스탬프
-  acceptedAt  DateTime  @default(now()) @map("accepted_at")
-  withdrawnAt DateTime? @map("withdrawn_at")
+  acceptedAt    DateTime  @default(now()) @map("accepted_at")
+  withdrawnAt   DateTime? @map("withdrawn_at")
+  effectiveFrom DateTime  @default(now()) @map("effective_from") // 효력 시작 시점
+  effectiveTo   DateTime? @map("effective_to") // 효력 종료 시점(현재 효력 중이면 null)
 
-  @@unique([userId, policyId])
+  @@index([userId])
+  @@index([policyId])
   @@map("user_consents")
 }
 
@@ -127,7 +157,7 @@ model UserConsent {
 // ============================================
 model Group {
   id                Int      @id @default(autoincrement())
-  name              String
+  name              String   @db.VarChar(100)
   description       String?
   photoUrl          String?  @map("photo_url")
   goalRep           Int      @default(100) @map("goal_rep") // 기본값 설정
@@ -135,18 +165,19 @@ model Group {
   discordWebhookUrl String?  @map("discord_webhook_url")
   discordInviteUrl  String?  @map("discord_invite_url")
   likeCount         Int      @default(0) @map("like_count")
-  badges            String[] @default([])
 
   // 관계
   ownerId      Int?          @map("owner_id") // nullable 유지
   owner        Participant?  @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   participants Participant[] @relation("GroupParticipants")
   records      Record[]
+  groupBadges  GroupBadge[]
 
   // 타임스탬프
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([ownerId])
   @@map("groups")
 }
 
@@ -155,7 +186,7 @@ model Group {
 // ============================================
 model Participant {
   id       Int    @id @default(autoincrement())
-  nickname String
+  nickname String @db.VarChar(64)
   groupId  Int    @map("group_id")
   userId   Int?   @map("user_id")
 
@@ -172,6 +203,8 @@ model Participant {
   // 제약 완화: unique 제거 (같은 그룹 내 닉네임 중복 허용)
   // @@unique([groupId, nickname], name: "unique_nickname_per_group")
 
+  @@index([groupId])
+  @@index([userId])
   @@map("participants")
 }
 
@@ -179,16 +212,16 @@ model Participant {
 // Record (운동 기록)
 // ============================================
 model Record {
-  id                  Int          @id @default(autoincrement())
-  description         String?
-  time                Int
-  distance            Float
-  photos              String[]     @default([])
-  customExerciseName  String?      @map("custom_exercise_name") // 사전에 없는 종목명 자유 입력
+  id          Int      @id @default(autoincrement())
+  description String?
+  time        Int?
+  distance    Float?
+  count       Int? // 횟수 기반 종목용
+  photos      String[] @default([])
 
   // 관계
-  exerciseId Int?         @map("exercise_id")
-  exercise   Exercise?    @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
+  exerciseId Int          @map("exercise_id")
+  exercise   Exercise     @relation(fields: [exerciseId], references: [id])
   groupId    Int          @map("group_id")
   group      Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
   authorId   Int?         @map("author_id") // nullable로 변경
@@ -198,6 +231,9 @@ model Record {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([exerciseId])
+  @@index([groupId])
+  @@index([authorId])
   @@map("records")
 }
 
@@ -205,11 +241,11 @@ model Record {
 // Exercise (운동 종목 사전)
 // ============================================
 model Exercise {
-  id          Int      @id @default(autoincrement())
-  key         String   @unique // slug/프로그램 식별자
-  name        String
-  category    String?
-  defaultUnit String?  // 시간/거리/횟수 등 표시용
+  id          Int     @id @default(autoincrement())
+  key         String  @unique @db.VarChar(64) // slug/프로그램 식별자 (앱 레벨에서 슬러그 검증)
+  name        String  @db.VarChar(128)
+  category    String? @db.VarChar(64)
+  defaultUnit String? @db.VarChar(16) // 시간/거리/횟수 등 표시용
 
   // 관계
   records Record[]
