@@ -38,6 +38,7 @@ export function setupJwtStrategy() {
             id: user.id,
             username: user.username,
             email: user.email,
+            role: user.role,
           });
         } catch (err) {
           // ?) DB 오류 등 → 인증 실패 처리
