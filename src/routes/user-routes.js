@@ -24,6 +24,9 @@ router.post('/register', validate(RegisterUser), asyncHandler(userController.reg
 // ?) 로그인
 router.post('/login', validate(LoginUser), asyncHandler(userController.login));
 
+// ?) 중복 확인 (공용)
+router.get('/check', asyncHandler(userController.checkAvailability));
+
 // ?) 내 정보 조회
 router.get('/me', requireAuth, asyncHandler(userController.me));
 

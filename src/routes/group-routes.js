@@ -22,6 +22,11 @@ router.patch('/:groupId', requireAuth, validate(UpdateGroup), asyncHandler(group
 // 그룹 참가/탈퇴
 router.post('/:groupId/join', requireAuth, validate(JoinGroup), asyncHandler(groupController.joinGroup));
 router.delete('/:groupId/leave', requireAuth, asyncHandler(groupController.leaveGroup));
+router.delete('/:groupId', requireAuth, asyncHandler(groupController.deleteGroup));
+
+// 그룹 좋아요/취소
+router.post('/:groupId/like', requireAuth, asyncHandler(groupController.likeGroup));
+router.delete('/:groupId/like', requireAuth, asyncHandler(groupController.unlikeGroup));
 
 // 그룹 참여자 하위 라우트
 router.use('/:groupId/participants', participantRoutes);

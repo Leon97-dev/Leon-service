@@ -5,23 +5,17 @@ import cors from 'cors';
 
 const allowedOrigins = [
   process.env.CLIENT_URL, // .env에서 명시한 프론트 주소
-  'http://localhost:3000', // 개발용
+  'http://localhost:3000', // 백엔드와 같은 포트에서 직접 접근하는 경우
+  'http://localhost:3001', // 프론트 개발용(Next dev)
 ];
 
+const originChecker = (origin, callback) => {
+  if (!origin) return callback(null, true); // Postman 등
+  if (allowedOrigins.includes(origin)) return callback(null, true);
+  return callback(new Error('CORS 정책에 의해 차단된 요청입니다'), false);
+};
+
 export const corsOptions = cors({
-  origin: (origin, callback) => {
-    // origin이 없는 경우(예: Postman) 허용
-    if (!origin) return callback(null, true);
-
-    // 허용된 도메인만 받아줌
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    // 나머지는 차단
-    return callback(new Error('CORS 정책에 의해 차단된 요청입니다'), false);
-  },
-
-  credentials: true, // 인증/쿠키 필요할 때 true
+  origin: originChecker,
+  credentials: true,
 });
-
