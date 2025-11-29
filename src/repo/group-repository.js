@@ -124,4 +124,8 @@ export const groupRepo = {
       data: { likeCount: { decrement: 1 } },
     });
   },
+
+  countLikes(groupId) {
+    return prisma.groupLike.count({ where: { groupId } });
+  },
 };
