@@ -13,32 +13,58 @@ import styles from './GroupListItem.module.css';
 import SafeImage from '@/lib/components/SafeImage';
 
 const cx = classNames.bind(styles);
+const placeholderSrc =
+  typeof placeholderImage === 'string' ? placeholderImage : placeholderImage.src;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+const toDisplayUrl = (url?: string | null) => {
+  if (!url) return placeholderSrc;
+  if (url.startsWith('http') || url.startsWith('data:')) return url;
+  if (url.startsWith('/assets')) return url;
+  if (url.startsWith('/')) return `${API_BASE_URL}${url}`;
+  return url;
+};
 
 const GroupListItem = ({
   group,
   withMeta = true,
+  disabled = false,
 }: {
   group: Group;
   withMeta?: boolean;
+  disabled?: boolean;
 }) => {
+  const ownerDisplay =
+    group.ownerNickname ||
+    group.owner?.nickname ||
+    group.participants?.find((p) => p.id === group.ownerId)?.nickname ||
+    group.participants?.[0]?.nickname ||
+    '익명';
+
   return (
     <div>
-      <Link className={cx('groupCard')} href={`/groups/${group.id}/records`}>
+      <Link
+        className={cx('groupCard', { disabled })}
+        href={disabled ? '#' : `/groups/${group.id}/records`}
+        aria-disabled={disabled}
+        tabIndex={disabled ? -1 : 0}
+        onClick={(e) => {
+          if (disabled) e.preventDefault();
+        }}
+      >
         <SafeImage
           className={cx('groupImage')}
-          src={group.photoUrl || placeholderImage}
+          src={toDisplayUrl(group.photoUrl)}
           alt="group image"
           width={93}
           height={60}
-          fallback={placeholderImage}
+          fallback={placeholderSrc}
         />
-        <span className={cx('groupName')}>
-          {group.name}
-        </span>
-        <span className={cx('groupOwner')}>by {group.owner.nickname}</span>
+        <span className={cx('groupName')}>{group.name}</span>
+        <span className={cx('groupOwner')}>by {ownerDisplay}</span>
         <div className={cx('participantCount')}>
           <Image src={userImage} alt="user image" width={16} height={16} />
-          {group.participants.length}명 참여 중
+          {group.participants?.length ?? 0}명 참여 중
         </div>
       </Link>
       {withMeta && (
@@ -52,15 +78,6 @@ const GroupListItem = ({
             <div className={cx('likeCount')}>
               <Image src={thumbsUpImage} width={18} height={18} alt="like" />
               {group.likeCount}
-            </div>
-            <div className={cx('recordCount')}>
-              <Image
-                src={checkCircleImage}
-                width={18}
-                height={18}
-                alt="record"
-              />
-              {group.recordCount}
             </div>
           </div>
         </div>

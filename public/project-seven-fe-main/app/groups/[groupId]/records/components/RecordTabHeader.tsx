@@ -37,7 +37,7 @@ const RecordTabHeader = ({
       if (orderBy) params.set('orderBy', orderBy);
       router.push(`/groups/${groupId}/records?${params.toString()}`);
     },
-    [router]
+    [router],
   );
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {

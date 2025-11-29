@@ -1,50 +1,65 @@
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import classNames from 'classnames/bind';
-import {
-  EXERCISE_TYPE_MAP,
-  ExerciseType,
-  RecordCreate,
-} from '@/types/entities';
+import { Exercise, RecordCreate } from '@/types/entities';
 import styles from './RecordForm.module.css';
 import Dropdown from '@/lib/components/Dropdown';
 import Form from '@/lib/components/Form';
 import Input, { Textarea } from '@/lib/components/Input';
 import Label from '@/lib/components/Label';
 import Button from '@/lib/components/Button';
-import formatTime from '@/lib/formatTime';
 import Card from '@/lib/components/Card';
 import ImageInput from '@/lib/components/ImageInput';
 import { createRecordAction } from '../actions';
-
+import { axios } from '@/lib/axios';
 
 const cx = classNames.bind(styles);
 
 const defaultValues: RecordCreate = {
-  exerciseType: ExerciseType.RUN,
   photos: [],
   description: '',
-  distance: 1,
-  time: 0,
-  authorNickname: '',
-  authorPassword: '',
+  distance: undefined,
+  time: undefined,
+  count: undefined,
 };
 
 const RecordForm = ({
   groupId,
-  time,
   onSubmit,
 }: {
   groupId: number;
-  time: number;
   onSubmit: () => void;
 }) => {
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const { register, setValue, watch, handleSubmit, setError, formState } =
     useForm<RecordCreate>({
       defaultValues: {
         ...defaultValues,
-        time,
       },
     });
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get('/exercises');
+        const list: Exercise[] = res.data.data ?? [];
+        setExercises(list);
+        if (list[0]) {
+          setValue('exerciseId', list[0].id);
+        }
+        setLoadError(null);
+      } catch (e) {
+        console.error(e);
+        setLoadError('운동 종목을 불러오지 못했습니다. 새로고침 해 주세요.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [setValue]);
 
   const submit = async (data: RecordCreate) => {
     const reuslt = await createRecordAction(groupId, data);
@@ -63,19 +78,20 @@ const RecordForm = ({
       <Form
         className={cx('form')}
         onSubmit={handleSubmit(submit)}
-        error={formState.errors.root?.message}
+        error={formState.errors.root?.message || loadError || undefined}
       >
         <div>
-          <Label htmlFor="exerciseType">운동 종류</Label>
+          <Label htmlFor="exerciseId">운동 종류</Label>
           <Dropdown
-            options={Object.values(ExerciseType).map((type) => ({
-              label: EXERCISE_TYPE_MAP[type],
-              value: type,
+            options={exercises.map((ex) => ({
+              label: ex.name,
+              value: ex.id.toString(),
             }))}
-            value={watch('exerciseType')}
+            value={watch('exerciseId')?.toString()}
             onChange={(value: string) => {
-              setValue('exerciseType', value as ExerciseType);
+              setValue('exerciseId', Number(value));
             }}
+            disabled={loading || !!loadError}
           />
         </div>
 
@@ -98,14 +114,12 @@ const RecordForm = ({
           <Textarea
             id="description"
             error={formState.errors.description?.message}
-            {...register('description', {
-              required: '설명을 입력해 주세요.',
-            })}
+            {...register('description')}
           />
         </div>
 
         <div>
-          <Label htmlFor="distance">거리</Label>
+          <Label htmlFor="distance">거리(KM)</Label>
           <Input
             type="number"
             id="distance"
@@ -117,37 +131,22 @@ const RecordForm = ({
         </div>
 
         <div>
-          <Label>시간</Label>
-          <Input type="text" value={formatTime(time)} disabled />
-          <input
-            type="hidden"
-            value={time}
-            {...register('time', {
+          <Label>시간(초)</Label>
+          <Input
+            type="number"
+            error={formState.errors.time?.message}
+            {...register('time', { valueAsNumber: true })}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="count">횟수</Label>
+          <Input
+            type="number"
+            id="count"
+            error={formState.errors.count?.message}
+            {...register('count', {
               valueAsNumber: true,
-            })}
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="authorNickname">닉네임</Label>
-          <Input
-            type="text"
-            id="authorNickname"
-            error={formState.errors.authorNickname?.message}
-            {...register('authorNickname', {
-              required: '닉네임을 입력해 주세요.',
-            })}
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="authorPassword">비밀번호</Label>
-          <Input
-            id="authorPassword"
-            type="password"
-            error={formState.errors.authorPassword?.message}
-            {...register('authorPassword', {
-              required: '비밀번호를 입력해 주세요.',
             })}
           />
         </div>

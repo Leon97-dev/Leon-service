@@ -24,8 +24,19 @@ const ImageInput = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (files: File[]) => {
-    const { urls } = await uploadImage(files);
-    onChange(urls);
+    if (!files[0]) return;
+    try {
+      const { urls } = await uploadImage(files);
+      if (urls.length > 0) {
+        onChange(urls);
+        return;
+      }
+    } catch (error) {
+      console.error(error);
+    }
+    // 업로드가 실패하거나 인증이 없어도 로컬 미리보기라도 보여준다.
+    const localUrl = URL.createObjectURL(files[0]);
+    onChange([localUrl]);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,8 +101,8 @@ const ImageInput = ({
               className={cx('singlePreviewImage')}
               src={values[0]}
               alt="preview"
-              width={352}
-              height={206}
+              fill
+              sizes="(max-width: 768px) 100vw, 640px"
             />
             <Image
               className={cx('singleRemoveButton')}
@@ -109,9 +120,10 @@ const ImageInput = ({
           <Button
             type="button"
             appearance="minimal"
+            sizes="small"
             onClick={handleUploadClick}
           >
-            + 업로드
+            +
           </Button>
         )}
       </div>

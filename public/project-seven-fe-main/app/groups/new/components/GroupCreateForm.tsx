@@ -7,7 +7,7 @@ const GroupCreateForm = () => {
   const router = useRouter();
 
   const handleSubmit = async (groupId: number) => {
-    router.push(`/groups/${groupId}/records`);
+    router.push('/');
   };
 
   return <GroupForm type="create" onSubmit={handleSubmit} />;

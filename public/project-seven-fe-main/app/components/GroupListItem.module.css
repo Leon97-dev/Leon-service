@@ -12,6 +12,11 @@
   cursor: pointer;
 }
 
+.groupCard.disabled {
+  pointer-events: none;
+  cursor: default;
+}
+
 .groupCard::after {
   content: '';
   position: absolute;
