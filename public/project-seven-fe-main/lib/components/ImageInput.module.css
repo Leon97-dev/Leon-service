@@ -32,11 +32,12 @@
 
 .singlePreviewImageContainer {
   position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
 }
 
 .singlePreviewImage {
-  width: 338px;
-  height: 185px;
   object-fit: cover;
 }
 

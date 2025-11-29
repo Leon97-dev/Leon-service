@@ -16,8 +16,6 @@ export const groupService = {
       photoUrl = null,
       goalRep = 100,
       tags = [],
-      discordWebhookUrl = null,
-      discordInviteUrl = null,
       ownerNickname,
     } = payload;
 
@@ -33,8 +31,6 @@ export const groupService = {
           photoUrl,
           goalRep,
           tags,
-          discordWebhookUrl,
-          discordInviteUrl,
           likeCount: 0,
         },
         tx,
@@ -67,6 +63,17 @@ export const groupService = {
 
   listGroups() {
     return groupRepo.listGroups();
+  },
+
+  async listGroupsWithQuery(query) {
+    const { page = 1, limit = 50, search = '', orderBy = 'createdAt', order = 'desc' } = query;
+    const take = Math.min(Number(limit) || 50, 100);
+    const skip = ((Number(page) || 1) - 1) * take;
+    const [items, total] = await Promise.all([
+      groupRepo.listGroups({ search, orderBy, order, skip, take }),
+      groupRepo.countGroups({ search }),
+    ]);
+    return { items, total };
   },
 
   async updateGroup(userId, groupId, data) {
@@ -105,5 +112,60 @@ export const groupService = {
 
     await groupRepo.deleteParticipant(participant.id);
     return { groupId, userId };
+  },
+
+  async deleteGroup(userId, groupId) {
+    const group = await groupRepo.findGroupById(groupId);
+    if (!group) throw new NotFoundError('그룹을 찾을 수 없습니다');
+
+    const ownerParticipant = await groupRepo.findParticipantByUser(groupId, userId);
+    if (!ownerParticipant || group.ownerId !== ownerParticipant.id) {
+      throw new UnauthorizedError('그룹 오너만 삭제할 수 있습니다');
+    }
+
+    await groupRepo.deleteGroup(groupId);
+    return { groupId };
+  },
+
+  async likeGroup(userId, groupId) {
+    const group = await groupRepo.findGroupById(groupId);
+    if (!group) throw new NotFoundError('그룹을 찾을 수 없습니다');
+
+    const existing = await groupRepo.findLikeByUser(groupId, userId);
+    if (existing) throw new ConflictError('이미 좋아요한 그룹입니다');
+
+    const updatedGroup = await prisma.$transaction(async (tx) => {
+      await groupRepo.createLike(groupId, userId, tx);
+      return groupRepo.incrementLikeCount(groupId, tx);
+    });
+
+    return { groupId, likeCount: updatedGroup.likeCount };
+  },
+
+  async unlikeGroup(userId, groupId) {
+    const group = await groupRepo.findGroupById(groupId);
+    if (!group) throw new NotFoundError('그룹을 찾을 수 없습니다');
+
+    const existing = await groupRepo.findLikeByUser(groupId, userId);
+    if (!existing) throw new NotFoundError('좋아요 기록을 찾을 수 없습니다');
+
+    const updatedGroup = await prisma.$transaction(async (tx) => {
+      await groupRepo.deleteLike(groupId, userId, tx);
+      return groupRepo.decrementLikeCount(groupId, tx);
+    });
+
+    return { groupId, likeCount: updatedGroup.likeCount };
+  },
+
+  async getLikeStatus(userId, groupId) {
+    const group = await groupRepo.findGroupById(groupId);
+    if (!group) throw new NotFoundError('그룹을 찾을 수 없습니다');
+
+    const existing = await groupRepo.findLikeByUser(groupId, userId);
+    return {
+      groupId,
+      liked: !!existing,
+      likeCount: group.likeCount,
+    };
   },
 };

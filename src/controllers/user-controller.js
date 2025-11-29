@@ -24,6 +24,8 @@ export const userController = {
     const missing = [
       ['username', username],
       ['password', password],
+      ['email', email],
+      ['nickName', nickName],
       ['birthDate', birthDate],
       ['carrier', carrier],
       ['gender', gender],
@@ -55,8 +57,8 @@ export const userController = {
     if (tokens.refreshToken) {
       res.cookie('refreshToken', tokens.refreshToken, {
         httpOnly: true,
-        sameSite: isProd ? 'none' : 'lax',
-        secure: isProd,
+        sameSite: 'lax',
+        secure: false,
       });
     }
 
@@ -74,6 +76,18 @@ export const userController = {
         },
         ...tokens,
       },
+    });
+  },
+
+  // ?) 중복 확인
+  async checkAvailability(req, res) {
+    const { username, email, nickName } = req.query;
+    const available = await userService.checkAvailability({ username, email, nickName });
+
+    res.status(200).json({
+      success: true,
+      message: '중복 여부 확인',
+      data: available,
     });
   },
 
@@ -95,8 +109,8 @@ export const userController = {
     if (tokens.refreshToken) {
       res.cookie('refreshToken', tokens.refreshToken, {
         httpOnly: true,
-        sameSite: isProd ? 'none' : 'lax',
-        secure: isProd,
+        sameSite: 'lax',
+        secure: false,
       });
     }
 
@@ -128,8 +142,8 @@ export const userController = {
     if (tokens.refreshToken) {
       res.cookie('refreshToken', tokens.refreshToken, {
         httpOnly: true,
-        sameSite: isProd ? 'none' : 'lax',
-        secure: isProd,
+        sameSite: 'lax',
+        secure: false,
       });
     }
 

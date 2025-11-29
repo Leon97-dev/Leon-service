@@ -1,131 +1,83 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import classNames from 'classnames/bind';
-import { useInView } from 'react-intersection-observer';
 import { Group } from '@/types/entities';
-import { PaginationQuery } from '@/types/pagination';
 import { LinkButton } from '@/lib/components/Button';
-import Dropdown from '@/lib/components/Dropdown';
-import Input from '@/lib/components/Input';
-import { DEFAULT_GROUPS_PAGINATION_QUERY } from '@/lib/api';
 import GroupListItem from './GroupListItem';
-import { getGroupsAction } from '../actions';
 import styles from './GroupList.module.css';
+import { axios } from '@/lib/axios';
+import { DEFAULT_GROUPS_PAGINATION_QUERY } from '@/lib/api';
 
 const cx = classNames.bind(styles);
 
-const GroupListHeader = ({
-  initialQuery = DEFAULT_GROUPS_PAGINATION_QUERY,
-}: {
-  initialQuery: PaginationQuery;
-}) => {
-  const router = useRouter();
-
-  const setUrlParams = useCallback(
-    ({ search, orderBy }: { search: string; orderBy: string }) => {
-      const params = new URLSearchParams();
-      if (search) params.set('search', search);
-      if (orderBy) params.set('orderBy', orderBy);
-      router.push(`?${params.toString()}`);
-    },
-    [router]
-  );
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    const search = formData.get('search') as string;
-    setUrlParams({ search, orderBy: initialQuery.orderBy });
-  };
-
-  const handleOrderBy = (nextOrderby: string) => {
-    setUrlParams({ search: initialQuery.search, orderBy: nextOrderby });
-  };
-
-  return (
-    <div className={cx('listHeader')}>
-      <h2 className={cx('title')}>진행 중인 그룹</h2>
-      <div className={cx('actions')}>
-        <form onSubmit={handleSubmit}>
-          <Input
-            className={cx('search')}
-            name="search"
-            id="search"
-            search
-            placeholder="이름으로 검색하기 (엔터)"
-            defaultValue={initialQuery.search}
-          />
-        </form>
-
-        <Dropdown
-          className={cx('orderBy')}
-          value={initialQuery.orderBy}
-          onChange={handleOrderBy}
-          options={[
-            { label: '최신순', value: 'createdAt' },
-            { label: '참여자 수', value: 'participantCount' },
-            { label: '좋아요 수', value: 'likeCount' },
-          ]}
-        />
-        <LinkButton appearance="minimal" href="/groups/new">
-          + 새 그룹 만들기
-        </LinkButton>
-      </div>
+const GroupListHeader = () => (
+  <div className={cx('listHeader')}>
+    <h2 className={cx('title')}>진행 중인 그룹</h2>
+    <div className={cx('actions')}>
+      <LinkButton appearance="minimal" href="/groups/new">
+        + 새 그룹 만들기
+      </LinkButton>
     </div>
-  );
-};
+  </div>
+);
 
-const GroupList = ({
-  initialValues = [],
-  initialQuery,
-  total,
-}: {
-  initialValues: Group[];
-  initialQuery: PaginationQuery;
-  total: number;
-}) => {
+const GroupList = ({ initialValues = [], total = 0 }: { initialValues: Group[]; total?: number }) => {
   const [groups, setGroups] = useState<Group[]>(initialValues);
-  const [page, setPage] = useState(initialQuery.page);
-  const { ref, inView } = useInView();
-  const [isLoading, setIsLoading] = useState(false);
-  const hasNext = groups.length < total;
-
-  const loadMore = useCallback(async () => {
-    if (isLoading || !hasNext) return;
-    setIsLoading(true);
-    let next: Group[] = [];
-    try {
-      const res = await getGroupsAction({
-        ...initialQuery,
-        page: page + 1,
-      });
-      next = res.data;
-    } catch (error) {
-      console.error(error);
-      return;
-    } finally {
-      setIsLoading(false);
-    }
-    setGroups((prev) => [...prev, ...next]);
-    setPage(page + 1);
-  }, [initialQuery, page, hasNext, isLoading]);
-
-  useEffect(() => {
-    if (inView) {
-      loadMore();
-    }
-  }, [inView, loadMore]);
+  const [search, setSearch] = useState('');
+  const [orderBy, setOrderBy] = useState('createdAt');
+  const [totalCount, setTotalCount] = useState<number>(total ?? initialValues.length);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setGroups(initialValues);
-    setPage(initialQuery.page);
-  }, [initialValues, initialQuery.page]);
+    setTotalCount(total ?? initialValues.length);
+  }, [initialValues, total]);
+
+  useEffect(() => {
+    const handler = setTimeout(async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get('/groups', {
+          params: { ...DEFAULT_GROUPS_PAGINATION_QUERY, search, orderBy },
+        });
+        setGroups(res.data.data ?? []);
+        setTotalCount(res.data.total ?? 0);
+        setError(null);
+      } catch (e) {
+        console.error(e);
+        setError('그룹을 불러오지 못했습니다. 새로고침 해 주세요.');
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [search, orderBy]);
 
   return (
     <div className={cx('container')}>
-      <GroupListHeader initialQuery={initialQuery} />
+      <GroupListHeader />
+      <div className={cx('searchRow')}>
+        <input
+          className={cx('searchInput')}
+          placeholder="그룹명 검색"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select
+          className={cx('orderSelect')}
+          value={orderBy}
+          onChange={(e) => setOrderBy(e.target.value)}
+        >
+          <option value="createdAt">최신순</option>
+          <option value="likeCount">좋아요</option>
+          <option value="goalRep">목표횟수</option>
+        </select>
+        <span className={cx('total')}>총 {totalCount}개</span>
+      </div>
+      {error && <div className={cx('error')}>{error}</div>}
       <ul className={cx('list')}>
         {groups.map((group) => (
           <li key={group.id}>
@@ -133,7 +85,7 @@ const GroupList = ({
           </li>
         ))}
       </ul>
-      {hasNext && <div ref={ref} />}
+      {loading && <div className={cx('loading')}>불러오는 중...</div>}
     </div>
   );
 };

@@ -25,6 +25,39 @@ export const recordRepo = {
     return prisma.record.delete({ where: { id } });
   },
 
+  listByGroupWithQuery(groupId, { search, orderBy = 'createdAt', order = 'desc', skip = 0, take = 50 } = {}) {
+    const where = {
+      groupId,
+    };
+    if (search) {
+      where.OR = [
+        { description: { contains: search, mode: 'insensitive' } },
+        { exercise: { name: { contains: search, mode: 'insensitive' } } },
+        { author: { nickname: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    return prisma.record.findMany({
+      where,
+      include: { exercise: true, author: true },
+      orderBy: { [orderBy]: order },
+      skip,
+      take,
+    });
+  },
+
+  countByGroup(groupId, { search } = {}) {
+    const where = { groupId };
+    if (search) {
+      where.OR = [
+        { description: { contains: search, mode: 'insensitive' } },
+        { exercise: { name: { contains: search, mode: 'insensitive' } } },
+        { author: { nickname: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+    return prisma.record.count({ where });
+  },
+
   aggregateByGroup(groupId, startDate, endDate) {
     return prisma.record.groupBy({
       by: ['authorId'],

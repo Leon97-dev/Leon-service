@@ -1,3 +1,9 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .input {
   display: flex;
   flex-wrap: wrap;
@@ -46,4 +52,10 @@
 .hiddenSpan {
   opacity: 0;
   padding: 0 4px;
+}
+
+.error {
+  color: var(--red-500);
+  font-size: 12px;
+  line-height: 16px;
 }

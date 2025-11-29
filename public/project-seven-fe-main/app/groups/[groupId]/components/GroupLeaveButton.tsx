@@ -3,15 +3,15 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import classNames from 'classnames/bind';
-import { GroupJoin } from '@/types/entities';
 import Modal from '@/lib/components/Modal';
 import Button from '@/lib/components/Button';
 import Label from '@/lib/components/Label';
 import Input from '@/lib/components/Input';
-import { leaveGroupAction } from '../../actions';
+import { leaveGroup } from '@/lib/api';
 import styles from './GroupLeaveButton.module.css';
 import modalStyle from './modalStyle.module.css';
 import Form from '@/lib/components/Form';
+import { useRouter } from 'next/navigation';
 
 const cx = classNames.bind(styles);
 const modalCx = classNames.bind(modalStyle);
@@ -27,15 +27,21 @@ const GroupLeaveModal = ({
   onClose: () => void;
   onSubmit: () => void;
 }) => {
-  const { register, handleSubmit, formState, setError, reset } =
-    useForm<GroupJoin>();
+  const { handleSubmit, formState, setError, reset } = useForm({
+    mode: 'onSubmit',
+  });
+  const router = useRouter();
 
-  const submit = async (data: GroupJoin) => {
-    const result = await leaveGroupAction(groupId, data);
-    if (result.status !== 200) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setError((result.error.path as any) ?? 'root', {
-        message: result.error.message,
+  const submit = async () => {
+    try {
+      await leaveGroup(groupId);
+      reset();
+      onSubmit();
+      router.push('/');
+    } catch (error: unknown) {
+      setError('root', {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        message: (error as any)?.response?.data?.message || '나가기에 실패했습니다.',
       });
       return;
     }
@@ -48,45 +54,21 @@ const GroupLeaveModal = ({
     <Modal className={modalCx('modal')} isOpen={isOpen} onClose={onClose}>
       <h1 className={modalCx('title')}>그룹에서 나가시겠어요?</h1>
       <p className={modalCx('description')}>
-        그룹을 참여할 때 등록했던 정보를 입력해 주세요. 그룹을 나갈 시, 해당
-        닉네임으로 생성한 운동 기록은 모두 삭제됩니다.
+        그룹을 나가면 지금까지 기록한 운동 기록이 모두 삭제됩니다. 정말 나가시겠습니까?
       </p>
       <Form
         className={cx('form')}
         onSubmit={handleSubmit(submit)}
         error={formState.errors.root?.message}
       >
-        <div>
-          <Label htmlFor="nickname" error={!!formState.errors.nickname}>
-            닉네임
-          </Label>
-          <Input
-            id="nickname"
-            type="text"
-            className={cx('input')}
-            error={formState.errors.nickname?.message}
-            {...register('nickname', { required: '닉네임을 입력해 주세요.' })}
-          />
+        <div className={cx('actionRow')}>
+          <Button type="button" appearance="minimal" onClick={onClose}>
+            취소하기
+          </Button>
+          <Button type="submit" className={cx('button')}>
+            나가기
+          </Button>
         </div>
-        <div>
-          <Label htmlFor="password" error={!!formState.errors.password}>
-            비밀번호
-          </Label>
-          <Input
-            id="password"
-            type="password"
-            className={cx('input')}
-            error={formState.errors.password?.message}
-            {...register('password', { required: '비밀번호를 입력해 주세요.' })}
-          />
-        </div>
-        <Button
-          type="submit"
-          className={cx('button')}
-          disabled={!formState.isValid}
-        >
-          나가기
-        </Button>
       </Form>
     </Modal>
   );

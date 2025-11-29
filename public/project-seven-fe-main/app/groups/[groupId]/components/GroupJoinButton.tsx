@@ -3,15 +3,13 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import classNames from 'classnames/bind';
-import { GroupJoin } from '@/types/entities';
 import Modal from '@/lib/components/Modal';
 import Button from '@/lib/components/Button';
 import Form from '@/lib/components/Form';
-import { joinGroupAction } from '../../actions';
+import { joinGroup } from '@/lib/api';
 import styles from './GroupJoinButton.module.css';
 import modalStyles from './modalStyle.module.css';
-import Label from '@/lib/components/Label';
-import Input from '@/lib/components/Input';
+import { useAuth } from '@/lib/auth-context';
 
 const cx = classNames.bind(styles);
 const modalCx = classNames.bind(modalStyles);
@@ -27,61 +25,53 @@ const GroupJoinModal = ({
   onClose: () => void;
   onSubmit: () => void;
 }) => {
-  const { register, handleSubmit, setError, reset, formState } =
-    useForm<GroupJoin>();
+  const { handleSubmit, setError, reset, formState } = useForm({
+    mode: 'onSubmit',
+  });
+  const { user } = useAuth();
 
-  const submit = async (data: GroupJoin) => {
-    const result = await joinGroupAction(groupId, data);
-    if (result.status !== 200) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setError((result.error.path as any) ?? 'root', {
-        message: result.error.message,
+  const submit = async () => {
+    const nickname = user?.nickName || user?.username || '';
+    if (!nickname || nickname.length > 64) {
+      setError('root', {
+        message: '닉네임 정보를 불러오지 못했습니다. 다시 로그인해 주세요.',
       });
       return;
     }
-    onSubmit();
-    reset();
+
+    try {
+      await joinGroup(groupId, { nickname });
+      onSubmit();
+      reset();
+    } catch (error: unknown) {
+      const message =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (error as any)?.response?.data?.message ||
+        '이미 참여한 그룹입니다';
+      setError('root', {
+        message,
+      });
+    }
   };
 
   return (
     <Modal className={modalCx('modal')} isOpen={isOpen} onClose={onClose}>
       <h1 className={modalCx('title')}>그룹에 참여하시겠어요?</h1>
-      <p className={modalCx('description')}>
-        해당 그룹에서 사용할 닉네임과 비밀번호를 입력해 주세요.
-      </p>
+      <p className={modalCx('description')}>버튼을 누르면 바로 참여됩니다.</p>
       <Form
         className={cx('form')}
         onSubmit={handleSubmit(submit)}
         error={formState.errors.root?.message}
       >
         <input type="hidden" name="groupId" value={groupId} />
-        <div>
-          <Label htmlFor="nickname">닉네임</Label>
-          <Input
-            id="nickname"
-            type="text"
-            className={cx('input')}
-            error={formState.errors.nickname?.message}
-            {...register('nickname', { required: '닉네임을 입력해 주세요.' })}
-          />
+        <div className={cx('actionRow')}>
+          <Button type="button" appearance="minimal" onClick={onClose}>
+            취소하기
+          </Button>
+          <Button type="submit" className={cx('button')}>
+            참여하기
+          </Button>
         </div>
-        <div>
-          <Label htmlFor="password">비밀번호</Label>
-          <Input
-            id="password"
-            type="password"
-            className={cx('input')}
-            error={formState.errors.password?.message}
-            {...register('password', { required: '비밀번호를 입력해 주세요.' })}
-          />
-        </div>
-        <Button
-          type="submit"
-          className={cx('button')}
-          disabled={!formState.isValid}
-        >
-          참여하기
-        </Button>
       </Form>
     </Modal>
   );

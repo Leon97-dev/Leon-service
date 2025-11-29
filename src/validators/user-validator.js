@@ -5,7 +5,7 @@ const Email = s.pattern(s.string(), /^\S+@\S+\.\S+$/);
 const Password = s.size(s.string(), 8, 64);
 const Username = s.size(s.string(), 1, 64);
 const Nickname = s.size(s.string(), 1, 64);
-const ImageUrl = s.optional(s.pattern(s.string(), /^https?:\/\/.+/i));
+const ImageUrl = s.optional(s.pattern(s.string(), /^(https?:\/\/.+|\/.+)$/i));
 const BirthDate = s.pattern(s.string(), /^\d{8}$/);
 const Carrier = s.enums(['SKT', 'KT', 'LGU', 'MVNO']);
 const Gender = s.enums(['male', 'female']);
@@ -15,8 +15,8 @@ const PhoneNumber = s.pattern(s.string(), /^[0-9+\-]{5,32}$/);
 export const RegisterUser = s.object({
   username: Username,
   password: Password,
-  email: s.optional(Email),
-  nickName: s.optional(Nickname),
+  email: Email,
+  nickName: Nickname,
   profileImageUrl: ImageUrl,
   birthDate: BirthDate,
   carrier: Carrier,

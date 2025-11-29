@@ -14,7 +14,7 @@ const GroupRankPage = async ({
   searchParams: Promise<{ duration: RankDuration }>;
 }) => {
   const groupId = Number((await params).groupId);
-  const duration = (await searchParams).duration ?? RankDuration.MONTHLY;
+  const duration = (await searchParams).duration ?? RankDuration.WEEK;
   const group = await getGroupAction(groupId);
   const ranks = await getRanksAction(groupId, duration);
 
@@ -24,7 +24,7 @@ const GroupRankPage = async ({
       <GroupTab groupId={groupId} selectedTab="rank">
         <RankTabHeader
           groupId={groupId}
-          participantCount={group.participants.length}
+          participantCount={group.participants?.length ?? 0}
           duration={duration}
         />
       </GroupTab>

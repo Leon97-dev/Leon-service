@@ -9,8 +9,6 @@ export const groupController = {
       photoUrl,
       goalRep,
       tags,
-      discordWebhookUrl,
-      discordInviteUrl,
       ownerNickname,
     } = req.body;
 
@@ -28,8 +26,6 @@ export const groupController = {
       photoUrl,
       goalRep,
       tags,
-      discordWebhookUrl,
-      discordInviteUrl,
       ownerNickname,
     });
 
@@ -46,23 +42,27 @@ export const groupController = {
     res.status(200).json({ success: true, data: group });
   },
 
-  async listGroups(_req, res) {
-    const groups = await groupService.listGroups();
-    res.status(200).json({ success: true, data: groups });
+  async listGroups(req, res) {
+    const { page, limit, search, orderBy, order } = req.query;
+    const { items, total } = await groupService.listGroupsWithQuery({
+      page,
+      limit,
+      search,
+      orderBy,
+      order,
+    });
+    res.status(200).json({ success: true, data: items, total });
   },
 
   async updateGroup(req, res) {
     const groupId = Number(req.params.groupId);
-    const { name, description, photoUrl, goalRep, tags, discordWebhookUrl, discordInviteUrl } =
-      req.body;
+    const { name, description, photoUrl, goalRep, tags } = req.body;
     const updated = await groupService.updateGroup(req.user.id, groupId, {
       name,
       description,
       photoUrl,
       goalRep,
       tags,
-      discordWebhookUrl,
-      discordInviteUrl,
     });
 
     res.status(200).json({
@@ -95,6 +95,45 @@ export const groupController = {
     res.status(200).json({
       success: true,
       message: '그룹에서 탈퇴했습니다',
+      data: result,
+    });
+  },
+
+  async deleteGroup(req, res) {
+    const groupId = Number(req.params.groupId);
+    const result = await groupService.deleteGroup(req.user.id, groupId);
+    res.status(200).json({
+      success: true,
+      message: '그룹이 삭제되었습니다',
+      data: result,
+    });
+  },
+
+  async likeGroup(req, res) {
+    const groupId = Number(req.params.groupId);
+    const result = await groupService.likeGroup(req.user.id, groupId);
+    res.status(200).json({
+      success: true,
+      message: '좋아요가 추가되었습니다',
+      data: result,
+    });
+  },
+
+  async unlikeGroup(req, res) {
+    const groupId = Number(req.params.groupId);
+    const result = await groupService.unlikeGroup(req.user.id, groupId);
+    res.status(200).json({
+      success: true,
+      message: '좋아요가 취소되었습니다',
+      data: result,
+    });
+  },
+
+  async getLikeStatus(req, res) {
+    const groupId = Number(req.params.groupId);
+    const result = await groupService.getLikeStatus(req.user.id, groupId);
+    res.status(200).json({
+      success: true,
       data: result,
     });
   },

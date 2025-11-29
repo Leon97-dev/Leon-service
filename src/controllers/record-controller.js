@@ -31,8 +31,15 @@ export const recordController = {
 
   async listByGroup(req, res) {
     const groupId = Number(req.params.groupId);
-    const records = await recordService.listGroupRecords(groupId);
-    res.status(200).json({ success: true, data: records });
+    const { page, limit, search, orderBy, order } = req.query;
+    const { items, total } = await recordService.listGroupRecordsWithQuery(groupId, {
+      page,
+      limit,
+      search,
+      orderBy,
+      order,
+    });
+    res.status(200).json({ success: true, data: items, total });
   },
 
   async getOne(req, res) {
