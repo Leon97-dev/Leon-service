@@ -156,4 +156,16 @@ export const groupService = {
 
     return { groupId, likeCount: updatedGroup.likeCount };
   },
+
+  async getLikeStatus(userId, groupId) {
+    const group = await groupRepo.findGroupById(groupId);
+    if (!group) throw new NotFoundError('그룹을 찾을 수 없습니다');
+
+    const existing = await groupRepo.findLikeByUser(groupId, userId);
+    return {
+      groupId,
+      liked: !!existing,
+      likeCount: group.likeCount,
+    };
+  },
 };

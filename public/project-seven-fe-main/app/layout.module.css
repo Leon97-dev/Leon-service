@@ -6,8 +6,37 @@
   border-bottom: 1px solid var(--gray-100);
 }
 
+.logo {
+  height: 32px;
+  width: auto;
+}
+
 .main {
   max-width: 1280px;
   margin: 0 auto;
   padding: 80px 120px;
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navUser {
+  font-weight: 600;
+  color: #111827;
+}
+
+.navButton {
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #111827;
+}
+
+.navUserButton {
+  font-size: 17px;
+  font-weight: 700;
 }

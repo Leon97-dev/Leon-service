@@ -7,7 +7,6 @@ import Card from '@/lib/components/Card';
 import { Record } from '@/types/entities';
 import placeholderImage from '@/public/assets/placeholder.svg';
 import formatTime from '@/lib/formatTime';
-import { EXERCISE_TYPE_MAP } from '@/types/entities';
 import arrowRight from '@/public/assets/arrow.svg';
 import styles from './RecordListItem.module.css';
 
@@ -15,8 +14,7 @@ const cx = classNames.bind(styles);
 
 const RecordListItem = ({ record }: { record: Record }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const hasNext =
-    record.photos.length > 1 && currentIndex < record.photos.length - 1;
+  const hasNext = record.photos.length > 1 && currentIndex < record.photos.length - 1;
   const hasPrev = currentIndex > 0;
 
   const handleNext = () => {
@@ -36,13 +34,7 @@ const RecordListItem = ({ record }: { record: Record }) => {
       <div className={cx('imageContainer')}>
         {hasPrev && (
           <div className={cx('prevButton')} onClick={handlePrev}>
-            <Image
-              className={cx('prevArrowIcon')}
-              src={arrowRight}
-              alt="next"
-              width={6}
-              height={12}
-            />
+            <Image className={cx('prevArrowIcon')} src={arrowRight} alt="next" width={6} height={12} />
           </div>
         )}
         <Image
@@ -59,13 +51,15 @@ const RecordListItem = ({ record }: { record: Record }) => {
         )}
       </div>
       <div className={cx('content')}>
-        <div className={cx('distance')}>{record.distance}KM</div>
+        <div className={cx('distance')}>
+          {record.distance ? `${record.distance} KM` : record.count ? `${record.count} 회` : '-'}
+        </div>
         <div className={cx('description')}>{record.description}</div>
         <div className={cx('footer')}>
           <div className={cx('info')}>
-            {formatTime(record.time)} · {EXERCISE_TYPE_MAP[record.exerciseType]}
+            {record.time ? formatTime(record.time) : '시간 없음'} · {record.exercise?.name ?? '미지정'}
           </div>
-          <div className={cx('author')}>{record.author.nickname}</div>
+          <div className={cx('author')}>{record.author?.nickname ?? '익명'}</div>
         </div>
       </div>
     </Card>

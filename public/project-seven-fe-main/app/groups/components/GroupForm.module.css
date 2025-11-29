@@ -1,33 +1,48 @@
 .container {
   display: flex;
-  gap: 36px;
+  gap: 30px;
   width: 100%;
+  margin: 30px 50px 50px;
+  margin-left: 170px;
 }
 
 .title {
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 42px;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 60px;
   margin-bottom: 24px;
 }
 
 div.card {
-  min-width: 780px;
-  max-width: 1280px;
-  flex-grow: 1;
-  flex-shrink: 0;
-  padding: 40px;
+  min-width: 700px;
+  max-width: 880px;
+  flex: 1 1 60%;
+  padding: 56px 32px; /* 위아래 여백 크게, 좌우는 과하게 넓어지지 않게 */
 }
 
 .description {
-  height: 94px;
+  height: 100px;
   resize: none;
+}
+.descriptionBlock {
+  grid-column: 1 / 2;
 }
 
 .form {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 32px 24px;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr);
+  gap: 32px 32px;
+  align-items: start;
+}
+
+.formLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.formRight {
+  width: 100%;
 }
 
 .form input,
@@ -35,23 +50,38 @@ div.card {
   width: 100%;
 }
 
+.tags {
+  align-self: start;
+}
+
+.goalRep {
+  align-self: start;
+}
+
 .thumbnail {
-  grid-row: span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .thumbnailInput {
+  width: 100%;
+  max-height: 220px;
+  aspect-ratio: 16 / 9;
   height: 100%;
 }
-
-.tags,
-.goalRep {
-  grid-column: span 2;
+.preview {
+  width: 100%;
 }
 
-.preview {
-  flex-grow: 0;
-  flex-shrink: 0;
-  flex-basis: 384px;
+.previewWrapper {
+  flex: 0 0 320px;
+  max-width: 320px;
+  padding: 28px 12px 28px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
 }
 
 .previewTitle {
@@ -67,4 +97,11 @@ div.card {
 
 .submitButton {
   width: 218px;
+  justify-self: end; /* 버튼을 오른쪽으로 붙여 비율 조정 */
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }

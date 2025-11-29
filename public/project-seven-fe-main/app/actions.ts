@@ -1,8 +1,7 @@
 'use server';
 
 import { getGroups } from '@/lib/api';
-import { PaginationQuery } from '@/types/pagination';
 
-export const getGroupsAction = async (paginationQuery: PaginationQuery) => {
-  return getGroups(paginationQuery);
+export const getGroupsAction = async (query?: Record<string, string>) => {
+  return getGroups(query);
 };

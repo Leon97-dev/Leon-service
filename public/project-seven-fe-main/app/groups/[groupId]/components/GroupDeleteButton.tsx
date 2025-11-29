@@ -7,8 +7,6 @@ import classNames from 'classnames/bind';
 import { GroupDelete } from '@/types/entities';
 import Modal from '@/lib/components/Modal';
 import Form from '@/lib/components/Form';
-import Label from '@/lib/components/Label';
-import Input from '@/lib/components/Input';
 import Button from '@/lib/components/Button';
 import styles from './GroupDeleteButton.module.css';
 import modalStyles from './modalStyle.module.css';
@@ -28,8 +26,7 @@ const GroupDeleteModal = ({
   onClose: () => void;
   onSubmit: () => void;
 }) => {
-  const { register, handleSubmit, setError, formState } =
-    useForm<GroupDelete>();
+  const { handleSubmit, setError, formState } = useForm<GroupDelete>();
 
   const submit = async (data: GroupDelete) => {
     const response = await deleteGroupAction(groupId, data);
@@ -53,21 +50,11 @@ const GroupDeleteModal = ({
         error={formState.errors.root?.message}
       >
         <input type="hidden" name="groupId" value={groupId} />
-        <Label
-          htmlFor="ownerPassword"
-          error={!!formState.errors.ownerPassword?.message}
-        >
-          비밀번호
-        </Label>
-        <Input
-          className={cx('input')}
-          type="password"
-          {...register('ownerPassword')}
-        />
+        <p className={modalCx('description')}>이 작업은 되돌릴 수 없습니다.</p>
         <Button
           className={cx('button')}
           type="submit"
-          disabled={!formState.isValid}
+          disabled={formState.isSubmitting}
         >
           삭제하기
         </Button>

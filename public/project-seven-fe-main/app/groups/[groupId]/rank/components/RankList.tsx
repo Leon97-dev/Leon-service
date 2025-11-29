@@ -14,9 +14,8 @@ const RankItem = ({ order, rank }: { order: number; rank: Rank }) => {
       })}
     >
       <div className={cx('rankColumn')}>{order}등</div>
-      <div className={cx('nicknameColumn')}>{rank.nickname}</div>
-      <div className={cx('recordCountColumn')}>{rank.recordCount}개의 기록</div>
-      <div className={cx('recordTimeColumn')}>{formatTime(rank.recordTime)}</div>
+      <div className={cx('nicknameColumn')}>{rank.nickname ?? '익명'}</div>
+      <div className={cx('recordTimeColumn')}>{formatTime(rank.sumTime)}</div>
     </Card>
   );
 };
@@ -27,7 +26,6 @@ const RankList = ({ ranks }: { ranks: Rank[] }) => {
       <div className={cx('header')}>
         <div className={cx('rankColumn')}>랭킹</div>
         <div className={cx('nicknameColumn')}>닉네임</div>
-        <div className={cx('recordCountColumn')}>누적 기록 수</div>
         <div className={cx('recordTimeColumn')}>누적 시간</div>
       </div>
       <ol className={cx('ranks')}>

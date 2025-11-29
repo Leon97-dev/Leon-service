@@ -29,11 +29,11 @@ const RankTabHeader = ({
       <Dropdown
         options={[
           {
-            value: RankDuration.MONTHLY,
+            value: RankDuration.MONTH,
             label: '월간',
           },
           {
-            value: RankDuration.WEEKLY,
+            value: RankDuration.WEEK,
             label: '주간',
           },
         ]}

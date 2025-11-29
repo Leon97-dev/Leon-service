@@ -128,4 +128,13 @@ export const groupController = {
       data: result,
     });
   },
+
+  async getLikeStatus(req, res) {
+    const groupId = Number(req.params.groupId);
+    const result = await groupService.getLikeStatus(req.user.id, groupId);
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  },
 };

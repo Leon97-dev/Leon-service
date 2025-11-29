@@ -27,6 +27,7 @@ router.delete('/:groupId', requireAuth, asyncHandler(groupController.deleteGroup
 // 그룹 좋아요/취소
 router.post('/:groupId/like', requireAuth, asyncHandler(groupController.likeGroup));
 router.delete('/:groupId/like', requireAuth, asyncHandler(groupController.unlikeGroup));
+router.get('/:groupId/like', requireAuth, asyncHandler(groupController.getLikeStatus));
 
 // 그룹 참여자 하위 라우트
 router.use('/:groupId/participants', participantRoutes);

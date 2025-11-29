@@ -6,10 +6,19 @@ button.groupLeaveButton {
 .form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
-.form .input,
-.form .button {
+.form .input {
   width: 100%;
+}
+
+.actionRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.button {
+  flex: 1;
 }

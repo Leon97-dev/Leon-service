@@ -1,98 +1,102 @@
-export enum BadgeType {
-  PARTICIPATION_10 = 'PARTICIPATION_10',
-  RECORD_100 = 'RECORD_100',
-  LIKE_100 = 'LIKE_100',
-}
-
-export enum ExerciseType {
-  RUN = 'run',
-  BIKE = 'bike',
-  SWIM = 'swim',
-}
-
 export enum RankDuration {
-  MONTHLY = 'monthly',
-  WEEKLY = 'weekly',
+  MONTH = 'month',
+  WEEK = 'week',
 }
 
-interface BaseEntity {
+export interface Participant {
   id: number;
-  createdAt: number;
-  updatedAt: number;
-}
-
-export interface Participant extends BaseEntity {
   nickname: string;
+  userId?: number | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface Group extends BaseEntity {
+export interface Group {
+  id: number;
   name: string;
-  description?: string;
+  description?: string | null;
   photoUrl?: string | null;
   goalRep: number;
-  discordWebhookUrl?: string;
+  discordWebhookUrl?: string | null;
   discordInviteUrl?: string | null;
   likeCount: number;
   tags: string[];
-  owner: Participant;
-  participants: Participant[];
-  badges: BadgeType[];
-  recordCount: number;
+  ownerId?: number | null;
+  ownerNickname?: string | null;
+  owner?: Participant | null;
+  participants?: Participant[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface GroupCreate {
   name: string;
   description?: string;
   photoUrl?: string | null;
-  goalRep: number;
-  discordWebhookUrl?: string;
-  discordInviteUrl?: string | null;
-  tags: string[];
+  goalRep?: number;
+  tags?: string[];
   ownerNickname: string;
-  ownerPassword: string;
 }
 
-export type GroupUpdate = Partial<GroupCreate> & {
-  ownerPassword: string;
-};
+export type GroupUpdate = Partial<GroupCreate>;
 
 export interface GroupDelete {
-  ownerPassword: string;
+  // 현재 백엔드에서는 오너만 삭제 권한, 별도 비밀번호 없음
 }
 
 export interface GroupJoin {
   nickname: string;
-  password: string;
 }
 
-export interface Record extends BaseEntity {
-  exerciseType: ExerciseType;
-  description: string | null;
-  time: number;
-  distance: number;
+export interface Exercise {
+  id: number;
+  key: string;
+  name: string;
+  category?: string | null;
+  defaultUnit?: string | null;
+}
+
+export interface Record {
+  id: number;
+  description?: string | null;
+  time?: number | null;
+  distance?: number | null;
+  count?: number | null;
   photos: string[];
-  author: Participant;
+  exerciseId: number;
+  exercise?: Exercise | null;
+  authorId?: number | null;
+  author?: Participant | null;
+  groupId: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface RecordCreate {
-  exerciseType: ExerciseType;
-  description: string;
-  time: number;
-  distance: number;
-  photos: string[];
-  authorNickname: string;
-  authorPassword: string;
+  exerciseId: number;
+  description?: string;
+  time?: number;
+  distance?: number;
+  count?: number;
+  photos?: string[];
 }
 
 export interface Rank {
+  rank: number;
   participantId: number;
-  nickname: string;
-  recordCount: number;
-  recordTime: number;
+  nickname: string | null;
+  userId: number | null;
+  sumDistance: number;
+  sumCount: number;
+  sumTime: number;
+  records: number;
 }
 
-export const EXERCISE_TYPE_MAP = {
-  [ExerciseType.RUN]: '러닝',
-  [ExerciseType.BIKE]: '사이클링',
-  [ExerciseType.SWIM]: '수영',
-};
+export interface User {
+  id: number;
+  username: string;
+  email?: string | null;
+  nickName?: string | null;
+  profileImageUrl?: string | null;
+  role: 'user' | 'admin';
+}

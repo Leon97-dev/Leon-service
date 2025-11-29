@@ -1,12 +1,12 @@
-export interface PaginationQuery {
+export type PaginationQuery = {
   page: number;
   limit: number;
-  order: string;
+  order: 'asc' | 'desc';
   orderBy: string;
   search: string;
-}
+};
 
-export interface PaginationResponse<T> {
+export type PaginationResponse<T> = {
   data: T[];
   total: number;
-}
+};

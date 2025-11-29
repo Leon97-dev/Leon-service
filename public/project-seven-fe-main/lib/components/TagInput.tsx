@@ -5,6 +5,11 @@ import styles from './TagInput.module.css';
 const cx = classNames.bind(styles);
 
 const SYMBOL_TAG_INPUT_CURSOR = Symbol('tag input cursor');
+const MAX_TAG_LENGTH = 20;
+const ERROR_MESSAGES = {
+  maxCount: (count: number) => `태그는 최대 ${count}개까지 입력할 수 있어요.`,
+  maxLength: (length: number) => `태그는 ${length}자 이하로 입력해 주세요.`,
+};
 
 interface TagInputProps {
   value: string[];
@@ -14,6 +19,7 @@ interface TagInputProps {
 
 interface CursorProps {
   value: string;
+  onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
   onKeyUp: (event: React.KeyboardEvent<HTMLDivElement>) => void;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onFocus: () => void;
@@ -21,7 +27,7 @@ interface CursorProps {
 }
 
 const CursorImpl = (
-  { value, onKeyUp, onChange, onFocus, onBlur }: CursorProps,
+  { value, onKeyDown, onKeyUp, onChange, onFocus, onBlur }: CursorProps,
   ref: React.Ref<HTMLInputElement>
 ) => (
   <span
@@ -34,11 +40,13 @@ const CursorImpl = (
     <input
       className={cx('cursor')}
       value={value}
+      onKeyDown={onKeyDown}
       onKeyUp={onKeyUp}
       onChange={onChange}
       onFocus={onFocus}
       onBlur={onBlur}
       ref={ref}
+      data-allow-enter="true"
     />
   </span>
 );
@@ -60,6 +68,7 @@ const TagInput = ({ value, onChange, maxTags }: TagInputProps) => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -67,9 +76,18 @@ const TagInput = ({ value, onChange, maxTags }: TagInputProps) => {
     tagsWithCursor.findIndex((tag) => tag === SYMBOL_TAG_INPUT_CURSOR);
 
   const addTag = (value: string) => {
-    if (tagsWithCursor.length >= maxTags) return;
+    const currentTagsCount = tagsWithCursor.length - 1; // cursor 제외
+    if (currentTagsCount >= maxTags) {
+      setError(ERROR_MESSAGES.maxCount(maxTags));
+      return;
+    }
 
-    const safeValue = value.trim();
+    const safeValue = value.replace(/^#+/, '').trim();
+    if (!safeValue) return;
+    if (safeValue.length > MAX_TAG_LENGTH) {
+      setError(ERROR_MESSAGES.maxLength(MAX_TAG_LENGTH));
+      return;
+    }
     if (tagsWithCursor.includes(safeValue)) return;
 
     const cursorIndex = getCursorIndex();
@@ -83,6 +101,7 @@ const TagInput = ({ value, onChange, maxTags }: TagInputProps) => {
       .filter((tag) => tag !== SYMBOL_TAG_INPUT_CURSOR)
       .map((tag) => tag as string);
     onChange(plainNextTags);
+    setError(null);
   };
 
   const removeTag = () => {
@@ -116,6 +135,13 @@ const TagInput = ({ value, onChange, maxTags }: TagInputProps) => {
   const handleFocus = () => {
     if (inputRef.current) {
       inputRef.current.focus();
+    }
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      event.stopPropagation();
     }
   };
 
@@ -159,6 +185,7 @@ const TagInput = ({ value, onChange, maxTags }: TagInputProps) => {
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(event.target.value || '');
+    if (error) setError(null);
   };
 
   const handleInputFocus = () => {
@@ -170,33 +197,37 @@ const TagInput = ({ value, onChange, maxTags }: TagInputProps) => {
   };
 
   const showPlaceholder =
-    tagsWithCursor.length < 3 &&
+    tagsWithCursor.length - 1 < maxTags &&
     tagsWithCursor[tagsWithCursor.length - 1] === SYMBOL_TAG_INPUT_CURSOR &&
     inputValue === '';
 
   return (
-    <div
-      className={cx('input', { isFocused })}
-      ref={containerRef}
-      onClick={handleFocus}
-      onFocus={handleFocus}
-    >
-      {tagsWithCursor.map((tag, index) =>
-        tag === SYMBOL_TAG_INPUT_CURSOR ? (
-          <Cursor
-            key={'cursor'}
-            value={inputValue}
-            onKeyUp={handleKeyUp}
-            onChange={handleChange}
-            onFocus={handleInputFocus}
-            onBlur={handleInputBlur}
-            ref={inputRef}
-          />
-        ) : (
-          <Tag key={index} value={tag as string} />
-        )
-      )}
-      {showPlaceholder && <Placeholder />}
+    <div className={cx('wrapper')}>
+      <div
+        className={cx('input', { isFocused })}
+        ref={containerRef}
+        onClick={handleFocus}
+        onFocus={handleFocus}
+      >
+        {tagsWithCursor.map((tag, index) =>
+          tag === SYMBOL_TAG_INPUT_CURSOR ? (
+            <Cursor
+              key={'cursor'}
+              value={inputValue}
+              onKeyDown={handleKeyDown}
+              onKeyUp={handleKeyUp}
+              onChange={handleChange}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
+              ref={inputRef}
+            />
+          ) : (
+            <Tag key={index} value={tag as string} />
+          )
+        )}
+        {showPlaceholder && <Placeholder />}
+      </div>
+      {error && <div className={cx('error')}>{error}</div>}
     </div>
   );
 };

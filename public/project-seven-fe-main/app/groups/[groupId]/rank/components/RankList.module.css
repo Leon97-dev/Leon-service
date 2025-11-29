@@ -16,7 +16,6 @@
 
 .rankColumn,
 .nicknameColumn,
-.recordCountColumn,
 .recordTimeColumn {
   flex-grow: 0;
   flex-basis: 120px;
