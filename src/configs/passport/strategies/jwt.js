@@ -2,7 +2,6 @@
 // ?) JWT 토큰을 검증하고, payload 기반으로 유저를 식별하는 핵심 로직
 import passport from 'passport';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
-import { env } from '../../env.js';
 import { userRepo } from '../../../repo/user-repository.js';
 
 // ?) JWT 전략 등록 함수
@@ -17,7 +16,7 @@ export function setupJwtStrategy() {
 
         // ?) Access Token 검증 시 사용할 비밀키
         // *) 토큰 서명이 서버가 발급한 것인지 확인하는 핵심 요소
-        secretOrKey: env.jwt.accessSecret,
+        secretOrKey: process.env.JWT_ACCESS_SECRET,
 
         // ?) 만료된 토큰 자동 거부
         ignoreExpiration: false,

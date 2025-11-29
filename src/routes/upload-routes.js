@@ -7,7 +7,7 @@ import { uploadController } from '../controllers/upload-controller.js';
 
 const router = express.Router();
 
-// 이미지 단일 업로드
-router.post('/', requireAuth, upload.single('image'), asyncHandler(uploadController.upload));
+// 이미지 단일 업로드 (회원가입 시에도 사용하므로 인증 없이 허용)
+router.post('/', upload.single('image'), asyncHandler(uploadController.upload));
 
 export default router;

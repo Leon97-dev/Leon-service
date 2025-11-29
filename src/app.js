@@ -2,9 +2,10 @@
 // &) Config Import
 import './configs/env.js'; // 맨 위 필수!
 import express from 'express';
-import cors from 'cors';
 import path from 'path';
 import cookieParser from 'cookie-parser';
+import passport from 'passport';
+import { setupPassport } from './configs/passport/index.js';
 
 // &) Core Import
 import { debugLog } from './core/error/debug.js';
@@ -17,17 +18,20 @@ import consentRoutes from './routes/consent-routes.js';
 import groupRoutes from './routes/group-routes.js';
 import exerciseRoutes from './routes/exercise-routes.js';
 import uploadRoutes from './routes/upload-routes.js';
+import { corsOptions } from './configs/cors.js';
 
 // ?) 환경 변수
 const PORT = process.env.PORT || 3000;
 
 // ?) Express 진입
 const app = express();
+setupPassport();
 
 // ?) 미들 웨어 진입
-app.use(cors());
+app.use(corsOptions);
 app.use(express.json());
 app.use(cookieParser());
+app.use(passport.initialize());
 
 // ?) 이미지 정적 경로 진입
 app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));

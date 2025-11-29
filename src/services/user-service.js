@@ -26,11 +26,14 @@ export const userService = {
     nationality,
     phoneNumber,
   }) {
+    const defaultProfileImageUrl =
+      process.env.DEFAULT_PROFILE_IMAGE_URL || '/assets/default-frofile.png';
+
     const [byUsername, byEmail, byPhone, byNick] = await Promise.all([
       userRepo.findUserByUsername(username),
-      email ? userRepo.findUserByEmail(email) : null,
+      userRepo.findUserByEmail(email),
       userRepo.findUserByPhone(phoneNumber),
-      nickName ? userRepo.findUserByNickName(nickName) : null,
+      userRepo.findUserByNickName(nickName),
     ]);
 
     if (byUsername) throw new ConflictError('이미 존재하는 username입니다');
@@ -44,7 +47,7 @@ export const userService = {
       password: hashed,
       email,
       nickName,
-      profileImageUrl,
+      profileImageUrl: profileImageUrl || defaultProfileImageUrl,
       birthDate,
       carrier,
       gender,
@@ -52,6 +55,21 @@ export const userService = {
       phoneNumber,
       role: 'user',
     });
+  },
+
+  // 중복 확인용
+  async checkAvailability({ username, email, nickName }) {
+    const [byUsername, byEmail, byNick] = await Promise.all([
+      username ? userRepo.findUserByUsername(username) : null,
+      email ? userRepo.findUserByEmail(email) : null,
+      nickName ? userRepo.findUserByNickName(nickName) : null,
+    ]);
+
+    return {
+      username: username ? !byUsername : null,
+      email: email ? !byEmail : null,
+      nickName: nickName ? !byNick : null,
+    };
   },
 
   // ?) 로그인

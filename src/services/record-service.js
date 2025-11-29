@@ -67,6 +67,22 @@ export const recordService = {
     return recordRepo.listByGroup(groupId);
   },
 
+  async listGroupRecordsWithQuery(groupId, query) {
+    const group = await groupRepo.findGroupById(groupId);
+    if (!group) throw new NotFoundError('그룹을 찾을 수 없습니다');
+
+    const { page = 1, limit = 50, search = '', orderBy = 'createdAt', order = 'desc' } = query;
+    const take = Math.min(Number(limit) || 50, 100);
+    const skip = ((Number(page) || 1) - 1) * take;
+
+    const [items, total] = await Promise.all([
+      recordRepo.listByGroupWithQuery(groupId, { search, orderBy, order, skip, take }),
+      recordRepo.countByGroup(groupId, { search }),
+    ]);
+
+    return { items, total };
+  },
+
   async getRecord(id) {
     const record = await recordRepo.findById(id);
     if (!record) throw new NotFoundError('기록을 찾을 수 없습니다');

@@ -29,10 +29,35 @@ export const groupRepo = {
       },
     });
   },
-  listGroups() {
+  listGroups({ search, orderBy = 'createdAt', order = 'desc', skip = 0, take = 50 } = {}) {
+    const where = search
+      ? {
+          name: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        }
+      : undefined;
+
     return prisma.group.findMany({
-      orderBy: { createdAt: 'desc' },
+      where,
+      orderBy: { [orderBy]: order },
+      skip,
+      take,
+      include: {
+        participants: true,
+        owner: true,
+      },
     });
+  },
+
+  countGroups({ search } = {}) {
+    const where = search
+      ? {
+          name: { contains: search, mode: 'insensitive' },
+        }
+      : undefined;
+    return prisma.group.count({ where });
   },
 
   // 참여자
@@ -57,5 +82,46 @@ export const groupRepo = {
   updateParticipant(id, data, tx = null) {
     const db = clientOrDefault(tx);
     return db.participant.update({ where: { id }, data });
+  },
+
+  // 좋아요
+  findLikeByUser(groupId, userId) {
+    return prisma.groupLike.findUnique({
+      where: {
+        groupId_userId: { groupId, userId },
+      },
+    });
+  },
+
+  createLike(groupId, userId, tx = null) {
+    const db = clientOrDefault(tx);
+    return db.groupLike.create({
+      data: { groupId, userId },
+    });
+  },
+
+  deleteLike(groupId, userId, tx = null) {
+    const db = clientOrDefault(tx);
+    return db.groupLike.delete({
+      where: {
+        groupId_userId: { groupId, userId },
+      },
+    });
+  },
+
+  incrementLikeCount(groupId, tx = null) {
+    const db = clientOrDefault(tx);
+    return db.group.update({
+      where: { id: groupId },
+      data: { likeCount: { increment: 1 } },
+    });
+  },
+
+  decrementLikeCount(groupId, tx = null) {
+    const db = clientOrDefault(tx);
+    return db.group.update({
+      where: { id: groupId },
+      data: { likeCount: { decrement: 1 } },
+    });
   },
 };
