@@ -29,6 +29,7 @@ model User {
   participants Participant[]
   consents     UserConsent[]
   userBadges   UserBadge[]
+  groupLikes   GroupLike[]
 
   // 타임스탬프
   createdAt                    DateTime  @default(now()) @map("created_at")
@@ -158,15 +159,13 @@ model UserConsent {
 // Group (그룹)
 // ============================================
 model Group {
-  id                Int      @id @default(autoincrement())
-  name              String   @db.VarChar(100)
-  description       String?
-  photoUrl          String?  @map("photo_url")
-  goalRep           Int      @default(100) @map("goal_rep") // 기본값 설정
-  tags              String[] @default([]) // 기본값 설정
-  discordWebhookUrl String?  @map("discord_webhook_url")
-  discordInviteUrl  String?  @map("discord_invite_url")
-  likeCount         Int      @default(0) @map("like_count")
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  description String?
+  photoUrl    String?  @map("photo_url")
+  goalRep     Int      @default(100) @map("goal_rep") // 기본값 설정
+  tags        String[] @default([]) // 기본값 설정
+  likeCount   Int      @default(0) @map("like_count")
 
   // 관계
   ownerId      Int?          @map("owner_id") // nullable 유지
@@ -174,6 +173,7 @@ model Group {
   participants Participant[] @relation("GroupParticipants")
   records      Record[]
   groupBadges  GroupBadge[]
+  likes        GroupLike[]
 
   // 타임스탬프
   createdAt DateTime @default(now()) @map("created_at")
@@ -181,6 +181,24 @@ model Group {
 
   @@index([ownerId])
   @@map("groups")
+}
+
+// ============================================
+// GroupLike (그룹 좋아요)
+// ============================================
+model GroupLike {
+  id        Int      @id @default(autoincrement())
+  groupId   Int      @map("group_id")
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@map("group_likes")
 }
 
 // ============================================
